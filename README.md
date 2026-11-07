@@ -75,15 +75,27 @@ The backend is scaffolded as a single ASP.NET Core Web API project located at `b
 - API type: ASP.NET Core Web API with controllers
 - Dependency injection enabled through the default ASP.NET Core service container
 - Nullable reference types enabled
+- EF Core 10 with the Npgsql provider configured for PostgreSQL 18.6
 - OpenAPI enabled only in the Development environment
 - Health endpoint: `GET /api/health` returns `200 OK`
-- No PostgreSQL connection or authentication implementation has been added yet
+- PostgreSQL connection is configured via environment variables and not hardcoded in source files
+
+### Configure environment variables
+
+Create a local `.env` file from the sample file before running the project:
+
+```bash
+cp .env.example .env
+```
+
+Then update the values in `.env` for your local environment.
 
 ### Run the backend locally
 
 From the repository root:
 
 ```bash
+export ConnectionStrings__DefaultConnection="Host=localhost;Port=5432;Database=interproc;Username=interproc;Password=change_me"
 dotnet restore backend/InterProc.slnx
 dotnet build backend/InterProc.slnx
 dotnet run --project backend/InterProc.Api --urls http://localhost:5123
@@ -94,6 +106,23 @@ Then verify the health endpoint:
 ```bash
 curl http://localhost:5123/api/health
 ```
+
+### Apply EF Core migrations
+
+Use the .NET CLI from the repository root:
+
+```bash
+export ConnectionStrings__DefaultConnection="Host=localhost;Port=5432;Database=interproc;Username=interproc;Password=change_me"
+dotnet ef migrations add InitialCreate --project backend/InterProc.Api --startup-project backend/InterProc.Api --output-dir Data/Migrations
+```
+
+To apply the migrations to PostgreSQL:
+
+```bash
+dotnet ef database update --project backend/InterProc.Api --startup-project backend/InterProc.Api
+```
+
+The project intentionally does not create application entities yet, so the initial migration is a database-setup migration only.
 
 ### Development environment settings
 

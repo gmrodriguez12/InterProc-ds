@@ -19,17 +19,17 @@ services:
       - db
     environment:
       ASPNETCORE_ENVIRONMENT: Production
-      ConnectionStrings__Default: Host=db;Port=5432;Database=interproc;Username=interproc;Password=interproc
+      ConnectionStrings__DefaultConnection: Host=db;Port=5432;Database=${POSTGRES_DB};Username=${POSTGRES_USER};Password=${POSTGRES_PASSWORD}
     restart: unless-stopped
     networks:
       - interproc-network
 
   db:
-    image: postgres:18-alpine
+    image: postgres:18.6-alpine
     environment:
-      POSTGRES_DB: interproc
-      POSTGRES_USER: interproc
-      POSTGRES_PASSWORD: interproc
+      POSTGRES_DB: ${POSTGRES_DB}
+      POSTGRES_USER: ${POSTGRES_USER}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
     volumes:
       - postgres_data:/var/lib/postgresql/data
     ports:
