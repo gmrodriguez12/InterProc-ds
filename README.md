@@ -49,6 +49,8 @@ The production environment keeps the same logical topology but uses production-o
 ├── docs/
 │   └── architecture.md
 ├── backend/
+│   ├── InterProc.Api/
+│   ├── InterProc.slnx
 │   ├── src/
 │   └── tests/
 ├── frontend/
@@ -62,6 +64,44 @@ The production environment keeps the same logical topology but uses production-o
 └── .data/
     └── postgres/
 ```
+
+## Backend project
+
+The backend is scaffolded as a single ASP.NET Core Web API project located at `backend/InterProc.Api` and is grouped in the solution file `backend/InterProc.slnx`.
+
+### Backend project conventions
+
+- Target framework: `net10.0`
+- API type: ASP.NET Core Web API with controllers
+- Dependency injection enabled through the default ASP.NET Core service container
+- Nullable reference types enabled
+- OpenAPI enabled only in the Development environment
+- Health endpoint: `GET /api/health` returns `200 OK`
+- No PostgreSQL connection or authentication implementation has been added yet
+
+### Run the backend locally
+
+From the repository root:
+
+```bash
+dotnet restore backend/InterProc.slnx
+dotnet build backend/InterProc.slnx
+dotnet run --project backend/InterProc.Api --urls http://localhost:5123
+```
+
+Then verify the health endpoint:
+
+```bash
+curl http://localhost:5123/api/health
+```
+
+### Development environment settings
+
+The API uses environment-specific configuration files under `backend/InterProc.Api`:
+
+- `appsettings.json` for shared configuration
+- `appsettings.Development.json` for development-specific values
+- `appsettings.Production.json` for production-specific values
 
 ## Local development workflow
 
@@ -83,6 +123,6 @@ The production configuration is intentionally separate from the development envi
 
 ## Notes
 
-- The backend remains a single API project at this stage.
+- The backend is scaffolded as a single API project at this stage.
 - Source code and documentation are written in English.
-- The project intentionally does not yet scaffold Angular or .NET app sources; that step happens after the architecture is in place.
+- Angular app scaffolding is still pending; the backend is already initialized and ready for further development.

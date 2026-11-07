@@ -1,0 +1,6 @@
+@InterProc.Api_HostAddress = http://localhost:5230
+
+GET {{InterProc.Api_HostAddress}}/weatherforecast/
+Accept: application/json
+
+###
