@@ -1,0 +1,11 @@
+**/.git
+**/.DS_Store
+**/node_modules
+**/bin
+**/obj
+**/.angular
+**/.vs
+**/.vscode
+**/.idea
+**/.data
+**/*.log

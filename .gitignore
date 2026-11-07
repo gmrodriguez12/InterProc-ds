@@ -1,0 +1,43 @@
+# OS
+.DS_Store
+Thumbs.db
+
+# Git
+*.swp
+*.swo
+*.orig
+
+# Docker
+.docker/
+.data/
+*.pid
+
+# Node / Angular
+node_modules/
+.angular/
+coverage/
+.npm/
+.cache/
+
+# .NET / ASP.NET Core
+bin/
+obj/
+*.user
+*.suo
+*.userosscache
+*.sln.docstates
+TestResults/
+
+# PostgreSQL / local data
+postgres_data/
+*.db
+*.sqlite
+
+# Env files
+.env
+.env.*
+!.env.example
+
+# IDEs and editors
+.vscode/
+.idea/

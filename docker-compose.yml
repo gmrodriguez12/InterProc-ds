@@ -1,0 +1,60 @@
+services:
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+    depends_on:
+      - api
+    environment:
+      NODE_ENV: production
+    restart: unless-stopped
+    networks:
+      - interproc-network
+
+  api:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    depends_on:
+      - db
+    environment:
+      ASPNETCORE_ENVIRONMENT: Production
+      ConnectionStrings__Default: Host=db;Port=5432;Database=interproc;Username=interproc;Password=interproc
+    restart: unless-stopped
+    networks:
+      - interproc-network
+
+  db:
+    image: postgres:18-alpine
+    environment:
+      POSTGRES_DB: interproc
+      POSTGRES_USER: interproc
+      POSTGRES_PASSWORD: interproc
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    ports:
+      - "5432:5432"
+    restart: unless-stopped
+    networks:
+      - interproc-network
+
+  nginx:
+    image: nginx:alpine
+    depends_on:
+      - frontend
+      - api
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      - ./docker/nginx/prod/default.conf:/etc/nginx/conf.d/default.conf:ro
+    restart: unless-stopped
+    networks:
+      - interproc-network
+
+networks:
+  interproc-network:
+    driver: bridge
+
+volumes:
+  postgres_data:

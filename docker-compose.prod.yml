@@ -1,0 +1,18 @@
+services:
+  frontend:
+    environment:
+      NODE_ENV: production
+    command: sh -lc "npm ci && npm run build"
+
+  api:
+    environment:
+      ASPNETCORE_ENVIRONMENT: Production
+      ConnectionStrings__Default: Host=db;Port=5432;Database=interproc;Username=interproc;Password=interproc
+    command: sh -lc "dotnet restore && dotnet publish -c Release -o /app/publish"
+
+  nginx:
+    volumes:
+      - ./docker/nginx/prod/default.conf:/etc/nginx/conf.d/default.conf:ro
+    ports:
+      - "80:80"
+      - "443:443"
