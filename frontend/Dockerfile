@@ -2,8 +2,8 @@ FROM node:24-alpine AS development
 
 WORKDIR /workspace/frontend/interproc-web
 
-COPY interproc-web/package.json ./
-RUN npm install
+COPY interproc-web/package.json interproc-web/package-lock.json ./
+RUN npm ci
 
 EXPOSE 4200
 
@@ -13,8 +13,8 @@ FROM node:24-alpine AS build
 
 WORKDIR /workspace/frontend/interproc-web
 
-COPY interproc-web/package.json ./
-RUN npm install
+COPY interproc-web/package.json interproc-web/package-lock.json ./
+RUN npm ci
 COPY interproc-web/ ./
 RUN npm run build
 

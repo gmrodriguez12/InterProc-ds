@@ -1,6 +1,9 @@
 import { Component, inject } from '@angular/core';
 import { FormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
-import { RouterLink } from '@angular/router';
+import { Router, RouterLink } from '@angular/router';
+import { firstValueFrom } from 'rxjs';
+
+import { AuthService, AuthValidationErrors } from '../services/auth.service';
 
 @Component({
   selector: 'app-login',
@@ -29,22 +32,35 @@ import { RouterLink } from '@angular/router';
           <p>Enter your details to continue to InterProc.</p>
         </div>
 
+        @if (errorMessage) {
+          <p class="form-alert" role="alert">{{ errorMessage }}</p>
+        }
+
         <form [formGroup]="form" (ngSubmit)="onSubmit()" novalidate>
           <label for="login-email">Email address</label>
           <input id="login-email" type="email" formControlName="email" autocomplete="email"
-            placeholder="you@company.com">
+            placeholder="you@company.com" [attr.aria-invalid]="emailHasError">
           @if (form.controls.email.touched && form.controls.email.invalid) {
             <span class="field-error">Enter a valid email address.</span>
+          }
+          @for (message of apiErrors['email'] ?? []; track message) {
+            <span class="field-error">{{ message }}</span>
           }
 
           <label for="login-password">Password</label>
           <input id="login-password" type="password" formControlName="password"
-            autocomplete="current-password" placeholder="Enter your password">
+            autocomplete="current-password" placeholder="Enter your password"
+            [attr.aria-invalid]="passwordHasError">
           @if (form.controls.password.touched && form.controls.password.invalid) {
             <span class="field-error">Password is required.</span>
           }
+          @for (message of apiErrors['password'] ?? []; track message) {
+            <span class="field-error">{{ message }}</span>
+          }
 
-          <button class="button button-primary" type="submit">Continue <span aria-hidden="true">→</span></button>
+          <button class="button button-primary" type="submit" [disabled]="isSubmitting">
+            {{ isSubmitting ? 'Signing in…' : 'Continue' }} <span aria-hidden="true">→</span>
+          </button>
         </form>
 
         <p class="form-switch">New to InterProc? <a routerLink="/signup">Create an account</a></p>
@@ -54,13 +70,46 @@ import { RouterLink } from '@angular/router';
 })
 export class LoginComponent {
   private readonly formBuilder = inject(FormBuilder);
+  private readonly auth = inject(AuthService);
+  private readonly router = inject(Router);
+
+  isSubmitting = false;
+  errorMessage = '';
+  apiErrors: AuthValidationErrors = {};
 
   readonly form = this.formBuilder.nonNullable.group({
     email: ['', [Validators.required, Validators.email]],
     password: ['', Validators.required],
   });
 
-  onSubmit(): void {
+  get emailHasError(): boolean {
+    return this.form.controls.email.invalid || (this.apiErrors['email']?.length ?? 0) > 0;
+  }
+
+  get passwordHasError(): boolean {
+    return this.form.controls.password.invalid || (this.apiErrors['password']?.length ?? 0) > 0;
+  }
+
+  async onSubmit(): Promise<void> {
     this.form.markAllAsTouched();
+    this.errorMessage = '';
+    this.apiErrors = {};
+    if (this.form.invalid) {
+      return;
+    }
+
+    this.isSubmitting = true;
+    try {
+      await firstValueFrom(this.auth.login(this.form.getRawValue()));
+      await this.router.navigateByUrl('/dashboard');
+    } catch (error: unknown) {
+      this.apiErrors = this.auth.getValidationErrors(error);
+      this.errorMessage = this.auth.getErrorMessage(
+        error,
+        'We could not sign you in. Please try again.',
+      );
+    } finally {
+      this.isSubmitting = false;
+    }
   }
 }

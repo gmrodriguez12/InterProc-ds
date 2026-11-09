@@ -148,11 +148,11 @@ The Angular 22 application is located at `frontend/interproc-web`. The developme
 
 Available frontend routes:
 
-- `/login` — sign-in form UI
-- `/signup` — account creation form UI
-- `/dashboard` — dashboard placeholder
+- `/login` — sign in using the authentication API
+- `/signup` — create an account using the authentication API
+- `/dashboard` — authenticated workspace page
 
-These pages provide responsive layouts and reactive form validation only; authentication is not yet connected to the API.
+At startup the frontend checks whether the API has users and restores any existing session. First-time visitors are directed to account creation, anonymous users with an existing workspace to sign-in, and authenticated users to the dashboard. Login, signup, and logout use the API's cookie authentication and CSRF protection; no authentication token is stored in browser storage.
 
 ### Build the frontend for production
 
