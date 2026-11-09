@@ -40,6 +40,20 @@ docker compose -f compose.yaml -f compose.dev.yaml logs -f
 docker compose -f compose.yaml -f compose.dev.yaml down
 ```
 
+### macOS hot-reload troubleshooting
+
+- Confirm Docker Desktop is running and the repository is shared with Docker Desktop.
+- Keep the Compose polling settings enabled: Angular uses `--poll 1000` and `CHOKIDAR_USEPOLLING`; .NET uses `DOTNET_USE_POLLING_FILE_WATCHER=1`.
+- Check the watcher output with `docker compose -f compose.yaml -f compose.dev.yaml logs -f frontend api`. Angular reports component updates/rebuilds; .NET reports changed files and rebuilds.
+- If dependencies or a watcher remain stale, restart only the affected service:
+
+  ```bash
+  docker compose -f compose.yaml -f compose.dev.yaml restart frontend
+  docker compose -f compose.yaml -f compose.dev.yaml restart api
+  ```
+
+- `node_modules` and NuGet packages live in named Docker volumes, not in host folders. If a dependency manifest changes, recreate the matching dependency volume only when necessary; doing so removes its cached packages.
+
 ## Production
 
 Build the Angular static assets, publish the API, and start the services:
@@ -62,6 +76,12 @@ docker compose down
 
 Do not use `docker compose down -v` unless you intend to delete the database and Data Protection keys.
 
+## Environment configuration
+
+Compose reads `POSTGRES_DB`, `POSTGRES_USER`, and `POSTGRES_PASSWORD` from the root `.env` file. Start from `.env.example`, replace the placeholder password with a generated secret, and keep `.env` out of version control. The API receives the database connection through the internal Compose network; database credentials are not published as ports or committed to source.
+
+PostgreSQL uses these values only when its data directory is first initialized. Editing `.env` later does not change the password of an existing database volume. Back up the data and update the database role deliberately before changing the configured credential; do not delete the volume to rotate a password.
+
 ## Database migrations and backups
 
 The API applies pending EF Core migrations during startup using the EF migration history table. Compose waits for PostgreSQL's health check before starting the API; the API does not become healthy until migration completes. Startup migration is repeatable for migrations that have already been applied.
@@ -80,6 +100,43 @@ docker compose logs -f api
 ```
 
 Deploy schema changes with a single API instance, review destructive migrations, and verify the backup before upgrading. Keep the backup securely; it contains application data.
+
+## Testing and verification
+
+Validate the Compose files before starting services:
+
+```bash
+docker compose -f compose.yaml -f compose.dev.yaml config --quiet
+docker compose -f compose.yaml config --quiet
+```
+
+In development, verify the reverse proxy and API health:
+
+```bash
+curl -i http://localhost:8080/login
+curl -i http://localhost:8080/api/health
+curl -i http://localhost:8080/api/auth/setup-status
+```
+
+For an authentication smoke test, use the browser at `http://localhost:8080`: create the first account, refresh the dashboard, sign out, sign in again, and verify that a later account receives the User role. Confirm that opening `/dashboard` while signed out redirects to `/login`. A state-changing request without a CSRF token should return HTTP 400.
+
+Verify persistence without deleting data by restarting PostgreSQL and checking the health endpoint and setup status again:
+
+```bash
+docker compose -f compose.yaml -f compose.dev.yaml restart db
+curl -i http://localhost:8080/api/health
+curl -i http://localhost:8080/api/auth/setup-status
+```
+
+Build both application targets using container-provided toolchains:
+
+```bash
+docker compose -f compose.yaml -f compose.dev.yaml exec frontend npm run build
+docker compose -f compose.yaml -f compose.dev.yaml exec api dotnet build InterProc.Api/InterProc.Api.csproj --no-restore
+docker compose build
+```
+
+The production browser smoke test must use the public HTTPS address behind the TLS-terminating proxy; verify that `/` serves the Angular app and `/api/health` is reachable through the same origin. Do not test production authentication by exposing the HTTP listener directly.
 
 ## Application
 

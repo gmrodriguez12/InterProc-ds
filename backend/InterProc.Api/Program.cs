@@ -3,6 +3,7 @@ using InterProc.Api.Data;
 using InterProc.Api.Services;
 using Microsoft.AspNetCore.Authentication.Cookies;
 using Microsoft.AspNetCore.DataProtection;
+using Microsoft.AspNetCore.HttpOverrides;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
 
@@ -23,6 +24,13 @@ public class Program
 
         builder.Services.AddControllersWithViews();
         builder.Services.AddSingleton<IHealthService, HealthService>();
+        builder.Services.Configure<ForwardedHeadersOptions>(options =>
+        {
+            options.ForwardedHeaders = ForwardedHeaders.XForwardedProto;
+            options.ForwardLimit = 1;
+            options.KnownIPNetworks.Clear();
+            options.KnownProxies.Clear();
+        });
         builder.Services.AddDbContext<ApplicationDbContext>(options =>
             options.UseNpgsql(connectionString, npgsql => npgsql.EnableRetryOnFailure()));
         builder.Services
@@ -85,6 +93,8 @@ public class Program
         }
 
         var app = builder.Build();
+
+        app.UseForwardedHeaders();
 
         await using (var scope = app.Services.CreateAsyncScope())
         {
