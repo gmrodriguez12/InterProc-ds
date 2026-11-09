@@ -1,6 +1,36 @@
 @InterProc.Api_HostAddress = http://localhost:5230
+@csrfToken = replace-with-XSRF-TOKEN-cookie-value
 
-GET {{InterProc.Api_HostAddress}}/weatherforecast/
+### Get setup status and the CSRF request token
+GET {{InterProc.Api_HostAddress}}/api/auth/setup-status
 Accept: application/json
+
+### Register and sign in the first user (Admin)
+POST {{InterProc.Api_HostAddress}}/api/auth/signup
+Content-Type: application/json
+X-XSRF-TOKEN: {{csrfToken}}
+
+{
+  "email": "admin@example.com",
+  "password": "ChangeMe123!"
+}
+
+### Sign in
+POST {{InterProc.Api_HostAddress}}/api/auth/login
+Content-Type: application/json
+X-XSRF-TOKEN: {{csrfToken}}
+
+{
+  "email": "admin@example.com",
+  "password": "ChangeMe123!"
+}
+
+### Get the current account
+GET {{InterProc.Api_HostAddress}}/api/auth/me
+Accept: application/json
+
+### Sign out
+POST {{InterProc.Api_HostAddress}}/api/auth/logout
+X-XSRF-TOKEN: {{csrfToken}}
 
 ###
