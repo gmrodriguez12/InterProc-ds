@@ -1,83 +1,25 @@
 # InterProc architecture
 
-## Development architecture
+## Development
 
-The development topology has four main runtime services:
+Run the development overlay with:
 
-```text
-┌───────────────────────┐      ┌───────────────────────┐
-│ Host machine          │      │ Docker runtime        │
-│                       │      │                       │
-│ VS Code / source      │──────▶│ Angular container      │
-│ editing               │      │ live reload on bind   │
-│                       │      │ mount                 │
-└───────────────────────┘      └───────────┬────────────┘
-                                            │
-                                            │ HTTP / REST
-                                            ▼
-                                   ┌───────────────────────┐
-                                   │ ASP.NET Core API      │
-                                   │ container             │
-                                   │ dotnet watch          │
-                                   └───────────┬───────────┘
-                                               │
-                                               │ EF Core / SQL
-                                               ▼
-                                   ┌───────────────────────┐
-                                   │ PostgreSQL 18         │
-                                   │ container             │
-                                   │ persistent data       │
-                                   └───────────┬───────────┘
-                                               │
-                                               │ proxy
-                                               ▼
-                                   ┌───────────────────────┐
-                                   │ Nginx container       │
-                                   │ reverse proxy         │
-                                   └───────────────────────┘
+```bash
+docker compose -f compose.yaml -f compose.dev.yaml up --build
 ```
 
-### Development characteristics
+The host reaches the application only through Nginx at `http://localhost:8080`. Nginx proxies Angular routes and live-reload WebSockets to the Node.js 24 development server and `/api/` requests to ASP.NET Core 10. PostgreSQL and the API have no published ports. Frontend and backend source directories are bind-mounted; polling supports Docker Desktop file events. Separate Docker volumes hold frontend dependencies, backend NuGet packages, PostgreSQL data, and ASP.NET Data Protection keys.
 
-- Source directories are bind-mounted into the containers.
-- Angular uses a dev server and watches local files for changes.
-- The .NET API uses `dotnet watch` for automatic recompilation during development.
-- PostgreSQL stores files in a Docker-managed volume or a local bind directory.
-- Nginx remains a container service and is always controlled through Docker Compose.
+## Production
 
-## Production architecture
-
-Production uses the same service boundaries but a different execution model.
-
-```text
-Internet
-  │
-  ▼
-Nginx container
-  ├── serves built Angular frontend assets
-  └── forwards API requests to the backend API container
-
-ASP.NET Core API container
-  └── handles REST endpoints
-
-PostgreSQL container
-  └── stores application data
+```bash
+docker compose up --build -d
 ```
 
-### Production characteristics
+The frontend Docker build compiles Angular into static assets served by Nginx. A separate Nginx container is the only published application service and proxies `/api/` to the ASP.NET Core API. PostgreSQL and API ports remain internal to the Compose network. Named volumes preserve database files and cookie-protection keys.
 
-- The Angular app is built ahead of time for static delivery.
-- The API runs in a production-optimized container environment.
-- Compose uses a production override file to disable development-only behavior.
-- Service configuration is intentionally kept separate from the development Compose stack.
+Production authentication cookies are secure. Terminate HTTPS at the public edge and forward `X-Forwarded-Proto: https`; do not expose the HTTP listener publicly without TLS.
 
-## Network and volume assumptions
+## Database initialization
 
-- The backend, frontend, and PostgreSQL services share a private Docker network.
-- Nginx is placed in front of the frontend and API to provide a single entry point.
-- Bind mounts are used only in development so the host machine can edit project files directly.
-- Persistent database storage is isolated from the application source tree.
-
-## Initial scope
-
-The backend remains a single ASP.NET Core Web API project. The Angular frontend lives in `frontend/interproc-web`; development uses a Node.js container with a bind mount and a Docker-managed `node_modules` volume, while production builds static assets into an Nginx container.
+The API applies EF Core migrations when its process starts. Compose health-check dependencies ensure PostgreSQL is accepting connections first. Pending migrations run before the API reports healthy; EF's migration history makes initialization repeatable across restarts. Back up the database before schema deployments and use a single API instance while applying migrations.

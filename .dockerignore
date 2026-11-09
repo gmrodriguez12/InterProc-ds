@@ -9,3 +9,10 @@
 **/.idea
 **/.data
 **/*.log
+**/coverage
+**/TestResults
+**/.npm
+**/.cache
+.env
+.env.*
+!.env.example

@@ -1,177 +1,89 @@
 # InterProc
 
-InterProc is a Docker-first full-stack application with a containerized Angular frontend, a single ASP.NET Core Web API backend, a PostgreSQL database, and an Nginx reverse proxy.
+InterProc is a Docker-first application with an Angular 22 frontend, ASP.NET Core 10 API, PostgreSQL 18, and an Nginx reverse proxy.
 
-## Stack
+## Requirements
 
-- Angular 22
-- ASP.NET Core Web API .NET 10
-- Entity Framework Core 10
-- PostgreSQL 18
-- Docker Compose V2
-- Nginx
+- Docker Engine or Docker Desktop with Docker Compose V2 (2.24 or later)
+- OpenSSL for generating a local database password
 
-## Architecture overview
+Node.js, Angular CLI, .NET SDK, PostgreSQL, and Nginx are provided by containers and are not required on the host.
 
-### Development architecture
+## Configure credentials
 
-The development environment is optimized for local editing directly on the Mac while keeping the runtime in containers.
-
-- Angular runs in a Docker container with a bind-mounted source directory for live reload.
-- The ASP.NET Core API runs in a Docker container with `dotnet watch` enabled for hot reload.
-- PostgreSQL runs in its own container with a bind-mounted data volume for local persistence.
-- Nginx runs inside Docker and proxies requests to the frontend and API.
-- Source code directories are mounted from the host into the containers, so files can be edited locally and reflected immediately in the running services.
-
-### Production architecture
-
-The production environment keeps the same logical topology but uses production-oriented configuration and static serving defaults.
-
-- Angular is built into production assets in a dedicated container stage.
-- The .NET API is published as a production container image.
-- PostgreSQL remains a containerized data service with persistent storage.
-- Nginx serves the frontend build and proxies API traffic to the backend.
-- Production uses a separate Compose profile and environment configuration from development.
-
-## Repository layout
-
-```text
-.
-├── AGENTS.md
-├── README.md
-├── .gitignore
-├── .dockerignore
-├── docker-compose.yml
-├── docker-compose.override.yml
-├── docker-compose.prod.yml
-├── docs/
-│   └── architecture.md
-├── backend/
-│   ├── InterProc.Api/
-│   ├── InterProc.slnx
-│   ├── src/
-│   └── tests/
-├── frontend/
-│   ├── Dockerfile
-│   └── interproc-web/
-│       ├── angular.json
-│       ├── package.json
-│       └── src/
-├── docker/
-│   ├── nginx/
-│   │   ├── dev/
-│   │   └── prod/
-│   └── postgres/
-│       └── init/
-└── .data/
-    └── postgres/
-```
-
-## Backend project
-
-The backend is scaffolded as a single ASP.NET Core Web API project located at `backend/InterProc.Api` and is grouped in the solution file `backend/InterProc.slnx`.
-
-### Backend project conventions
-
-- Target framework: `net10.0`
-- API type: ASP.NET Core Web API with controllers
-- Dependency injection enabled through the default ASP.NET Core service container
-- Nullable reference types enabled
-- EF Core 10 with the Npgsql provider configured for PostgreSQL 18.6
-- OpenAPI enabled only in the Development environment
-- Health endpoint: `GET /api/health` returns `200 OK`
-- PostgreSQL connection is configured via environment variables and not hardcoded in source files
-
-### Configure environment variables
-
-Create a local `.env` file from the sample file before running the project:
+Create the Compose environment file and generate a strong random password:
 
 ```bash
 cp .env.example .env
+openssl rand -hex 32
 ```
 
-Then update the values in `.env` for your local environment.
+Set the generated value as `POSTGRES_PASSWORD` in `.env`. Do not commit `.env`; credentials are read by Compose and are not stored in the repository.
 
-### Run the backend locally
+## Development
 
-From the repository root:
+Start the full development stack:
 
 ```bash
-export ConnectionStrings__DefaultConnection="Host=localhost;Port=5432;Database=interproc;Username=interproc;Password=change_me"
-dotnet restore backend/InterProc.slnx
-dotnet build backend/InterProc.slnx
-dotnet run --project backend/InterProc.Api --urls http://localhost:5123
+docker compose -f compose.yaml -f compose.dev.yaml up --build
 ```
 
-Then verify the health endpoint:
+Open <http://localhost:8080>. Only Nginx is published to the host. It proxies `/` to Angular's live-reload server, including WebSocket connections, and `/api/` to the API. The frontend and API are available only within the Compose network. PostgreSQL data, frontend `node_modules`, backend NuGet packages, and ASP.NET Data Protection keys use Docker-managed volumes. Frontend and backend source are bind-mounted with polling enabled for Docker Desktop on macOS.
+
+Common operations:
 
 ```bash
-curl http://localhost:5123/api/health
+# Follow service logs
+docker compose -f compose.yaml -f compose.dev.yaml logs -f
+
+# Stop services without deleting volumes or PostgreSQL data
+docker compose -f compose.yaml -f compose.dev.yaml down
 ```
 
-### Apply EF Core migrations
+## Production
 
-Use the .NET CLI from the repository root:
+Build the Angular static assets, publish the API, and start the services:
 
 ```bash
-export ConnectionStrings__DefaultConnection="Host=localhost;Port=5432;Database=interproc;Username=interproc;Password=change_me"
-dotnet ef migrations add InitialCreate --project backend/InterProc.Api --startup-project backend/InterProc.Api --output-dir Data/Migrations
+docker compose up --build -d
+docker compose ps
+docker compose logs -f
 ```
 
-To apply the migrations to PostgreSQL:
+Only Nginx publishes a host port (`80`). The frontend is served as static files by an Nginx container, and `/api/` is reverse-proxied to the API. PostgreSQL and the API have no published host ports. PostgreSQL data and ASP.NET Data Protection keys persist in named volumes.
+
+Production authentication cookies are `Secure`, `HttpOnly`, and same-site. **Serve production traffic over HTTPS.** This Compose stack listens on HTTP port 80; put it behind an HTTPS-terminating reverse proxy/load balancer, do not expose the HTTP endpoint publicly, and preserve the `X-Forwarded-Proto: https` header to Nginx. The API sets secure cookies in production, so browser authentication will not work over plain HTTP. Local development uses non-secure cookies only on the localhost development endpoint.
+
+Stop the production stack without deleting persistent data:
 
 ```bash
-dotnet ef database update --project backend/InterProc.Api --startup-project backend/InterProc.Api
+docker compose down
 ```
 
-The project intentionally does not create application entities yet, so the initial migration is a database-setup migration only.
+Do not use `docker compose down -v` unless you intend to delete the database and Data Protection keys.
 
-### Development environment settings
+## Database migrations and backups
 
-The API uses environment-specific configuration files under `backend/InterProc.Api`:
+The API applies pending EF Core migrations during startup using the EF migration history table. Compose waits for PostgreSQL's health check before starting the API; the API does not become healthy until migration completes. Startup migration is repeatable for migrations that have already been applied.
 
-- `appsettings.json` for shared configuration
-- `appsettings.Development.json` for development-specific values
-- `appsettings.Production.json` for production-specific values
-
-## Local development workflow
-
-Use Docker Compose V2 only. No local Node.js, Angular CLI, .NET SDK, PostgreSQL, or Nginx installation is required.
+Before deploying a schema change, take a database backup:
 
 ```bash
-docker compose -f docker-compose.yml -f docker-compose.override.yml up --build
+docker compose exec -T db sh -c 'pg_dump -U "$POSTGRES_USER" "$POSTGRES_DB"' > interproc-backup.sql
 ```
 
-This setup uses bind mounts so the code remains editable from the host machine while the services run inside Docker.
-
-The Angular 22 application is located at `frontend/interproc-web`. The development container uses Node.js 24, serves on `0.0.0.0:4200`, and polls mounted files for changes. Its `node_modules` directory is stored in a dedicated Docker volume rather than on the host. Open <http://localhost:4200> for the frontend or <http://localhost> through Nginx.
-
-Available frontend routes:
-
-- `/login` — sign in using the authentication API
-- `/signup` — create an account using the authentication API
-- `/dashboard` — authenticated workspace page
-
-At startup the frontend checks whether the API has users and restores any existing session. First-time visitors are directed to account creation, anonymous users with an existing workspace to sign-in, and authenticated users to the dashboard. Login, signup, and logout use the API's cookie authentication and CSRF protection; no authentication token is stored in browser storage.
-
-### Build the frontend for production
-
-The production Docker target builds the optimized Angular assets and serves them from an Nginx container. The edge Nginx container forwards frontend requests to this service and continues to proxy `/api/` requests to the backend:
+Then build and restart the API so it applies migrations before serving requests:
 
 ```bash
-docker compose -f docker-compose.yml -f docker-compose.prod.yml build frontend
+docker compose up --build -d api
+docker compose logs -f api
 ```
 
-## Production workflow
+Deploy schema changes with a single API instance, review destructive migrations, and verify the backup before upgrading. Keep the backup securely; it contains application data.
 
-```bash
-docker compose -f docker-compose.yml -f docker-compose.prod.yml up --build -d
-```
+## Application
 
-The production configuration is intentionally separate from the development environment.
-
-## Notes
-
-- The backend is a single API project.
-- The Angular frontend uses standalone components, strict TypeScript, Angular Router, HttpClient, and reactive forms.
-- Source code and documentation are written in English.
+- `frontend/interproc-web` is a standalone Angular application with strict TypeScript, Router, HttpClient, and reactive forms.
+- `/login`, `/signup`, and `/dashboard` integrate with the cookie-based auth API. The frontend uses the CSRF cookie/header and stores no authentication tokens in browser storage.
+- The backend is a single ASP.NET Core Web API project in `backend/InterProc.Api`.
+- Authenticated sessions are protected by ASP.NET Core Identity and PostgreSQL. Data Protection keys persist across container restarts.

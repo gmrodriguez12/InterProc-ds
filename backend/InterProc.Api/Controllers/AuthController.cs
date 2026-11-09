@@ -1,4 +1,5 @@
 using System.ComponentModel.DataAnnotations;
+using System.Security.Claims;
 using InterProc.Api.Services;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Antiforgery;
@@ -14,7 +15,8 @@ public sealed class AuthController(
     IAuthService authService,
     UserManager<IdentityUser> userManager,
     SignInManager<IdentityUser> signInManager,
-    IAntiforgery antiforgery) : ControllerBase
+    IAntiforgery antiforgery,
+    IWebHostEnvironment environment) : ControllerBase
 {
     [HttpPost("signup")]
     [ProducesResponseType<AuthenticatedUserResponse>(StatusCodes.Status201Created)]
@@ -34,6 +36,7 @@ public sealed class AuthController(
         }
 
         await signInManager.SignInAsync(user!, isPersistent: false);
+        StoreAntiforgeryToken();
         var response = await CreateUserResponseAsync(user!);
         return CreatedAtAction(nameof(Me), response);
     }
@@ -59,6 +62,7 @@ public sealed class AuthController(
             });
         }
 
+        StoreAntiforgeryToken();
         var user = await userManager.FindByEmailAsync(request.Email);
         if (user is null)
         {
@@ -73,6 +77,8 @@ public sealed class AuthController(
     public async Task<IActionResult> Logout()
     {
         await signInManager.SignOutAsync();
+        HttpContext.User = new ClaimsPrincipal(new ClaimsIdentity());
+        StoreAntiforgeryToken();
         return NoContent();
     }
 
@@ -95,16 +101,21 @@ public sealed class AuthController(
     [ProducesResponseType<SetupStatusResponse>(StatusCodes.Status200OK)]
     public async Task<IActionResult> SetupStatus(CancellationToken cancellationToken)
     {
+        StoreAntiforgeryToken();
+
+        return Ok(new SetupStatusResponse(await authService.HasUsersAsync(cancellationToken)));
+    }
+
+    private void StoreAntiforgeryToken()
+    {
         var tokens = antiforgery.GetAndStoreTokens(HttpContext);
         Response.Cookies.Append("XSRF-TOKEN", tokens.RequestToken!, new CookieOptions
         {
             HttpOnly = false,
-            Secure = true,
+            Secure = !environment.IsDevelopment(),
             SameSite = SameSiteMode.Lax,
             Path = "/"
         });
-
-        return Ok(new SetupStatusResponse(await authService.HasUsersAsync(cancellationToken)));
     }
 
     private async Task<AuthenticatedUserResponse> CreateUserResponseAsync(IdentityUser user) =>
