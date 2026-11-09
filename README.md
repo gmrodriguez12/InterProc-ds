@@ -2,8 +2,6 @@
 
 InterProc is a Docker-first full-stack application with a containerized Angular frontend, a single ASP.NET Core Web API backend, a PostgreSQL database, and an Nginx reverse proxy.
 
-The repository is intentionally initialized without generated application projects so the architecture and container workflow are defined before scaffolding the actual apps.
-
 ## Stack
 
 - Angular 22
@@ -54,7 +52,11 @@ The production environment keeps the same logical topology but uses production-o
 │   ├── src/
 │   └── tests/
 ├── frontend/
-│   └── src/
+│   ├── Dockerfile
+│   └── interproc-web/
+│       ├── angular.json
+│       ├── package.json
+│       └── src/
 ├── docker/
 │   ├── nginx/
 │   │   ├── dev/
@@ -142,6 +144,24 @@ docker compose -f docker-compose.yml -f docker-compose.override.yml up --build
 
 This setup uses bind mounts so the code remains editable from the host machine while the services run inside Docker.
 
+The Angular 22 application is located at `frontend/interproc-web`. The development container uses Node.js 24, serves on `0.0.0.0:4200`, and polls mounted files for changes. Its `node_modules` directory is stored in a dedicated Docker volume rather than on the host. Open <http://localhost:4200> for the frontend or <http://localhost> through Nginx.
+
+Available frontend routes:
+
+- `/login` — sign-in form UI
+- `/signup` — account creation form UI
+- `/dashboard` — dashboard placeholder
+
+These pages provide responsive layouts and reactive form validation only; authentication is not yet connected to the API.
+
+### Build the frontend for production
+
+The production Docker target builds the optimized Angular assets and serves them from an Nginx container. The edge Nginx container forwards frontend requests to this service and continues to proxy `/api/` requests to the backend:
+
+```bash
+docker compose -f docker-compose.yml -f docker-compose.prod.yml build frontend
+```
+
 ## Production workflow
 
 ```bash
@@ -152,6 +172,6 @@ The production configuration is intentionally separate from the development envi
 
 ## Notes
 
-- The backend is scaffolded as a single API project at this stage.
+- The backend is a single API project.
+- The Angular frontend uses standalone components, strict TypeScript, Angular Router, HttpClient, and reactive forms.
 - Source code and documentation are written in English.
-- Angular app scaffolding is still pending; the backend is already initialized and ready for further development.

@@ -80,4 +80,4 @@ PostgreSQL container
 
 ## Initial scope
 
-This repository intentionally keeps the backend as a single ASP.NET Core Web API project at the start. The frontend and API will be scaffolded later in their appropriate folders once these architecture decisions are in place.
+The backend remains a single ASP.NET Core Web API project. The Angular frontend lives in `frontend/interproc-web`; development uses a Node.js container with a bind mount and a Docker-managed `node_modules` volume, while production builds static assets into an Nginx container.

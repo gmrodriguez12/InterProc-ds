@@ -1,8 +1,11 @@
 services:
   frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+      target: production
     environment:
       NODE_ENV: production
-    command: sh -lc "npm ci && npm run build"
 
   api:
     environment:

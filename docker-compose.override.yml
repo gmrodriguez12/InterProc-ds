@@ -5,7 +5,8 @@ services:
       dockerfile: Dockerfile
     volumes:
       - ./frontend:/workspace/frontend:cached
-    working_dir: /workspace/frontend
+      - frontend_node_modules:/workspace/frontend/interproc-web/node_modules
+    working_dir: /workspace/frontend/interproc-web
     command: sh -lc "npm install && npm start -- --host 0.0.0.0 --poll 1000"
     environment:
       NODE_ENV: development
@@ -44,3 +45,6 @@ services:
     ports:
       - "80:80"
       - "443:443"
+
+volumes:
+  frontend_node_modules:
