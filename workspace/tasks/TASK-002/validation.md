@@ -23,4 +23,20 @@
 
 ## Fase 3
 
-Pendiente.
+- `dotnet test backend/InterProc.slnx`: 12 pruebas aprobadas; 0 fallidas.
+- Build Angular de producción en Docker: correcto.
+- Migraciones desde PostgreSQL 18 vacío: correctas en validación aislada.
+- Smoke API: cliente con identificador extranjero libre, alta y edición de nota: correcto.
+- Smoke de integridad: trabajo `En Ejecución` bloquea archivo con 409; al pasar a `Terminado`, el archivo devuelve 204 y genera auditoría: correcto.
+- La pila aislada y sus volúmenes temporales se eliminaron; no se tocaron volúmenes del proyecto.
+
+## Validación final integrada
+
+- `docker compose build` de API, frontend y Nginx de producción: correcto.
+- Compose de desarrollo completo con PostgreSQL 18, API, Angular y Nginx en proyecto aislado: cuatro servicios saludables.
+- Las cinco migraciones, incluida `AddClientsAndWorkFoundation`, se aplicaron desde una base vacía.
+- A través de Nginx: `/login` devolvió 200, `/api/health` devolvió `Healthy` y `/api/auth/setup-status` respondió correctamente.
+- Suite final: 12 pruebas aprobadas, 0 fallidas.
+- Auditoría final de NuGet y npm: 0 vulnerabilidades conocidas según las fuentes configuradas.
+- `git diff --check`: correcto.
+- Los contenedores, red y volúmenes de validación se eliminaron al finalizar. No se modificaron datos ni entornos persistentes del proyecto.

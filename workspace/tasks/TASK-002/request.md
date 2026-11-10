@@ -13,4 +13,4 @@ Avanzar de forma autónoma hasta la fase 3 inclusive, una vez resueltas las deci
 
 ## Estado
 
-In Progress. El Product Owner autorizó el 2026-11-10 la implementación completa y desatendida hasta la fase 3, incluidos commits locales por fase. No autorizó push ni despliegue.
+Done. Las fases 0–3 fueron implementadas, validadas y registradas en commits locales. No se realizó push ni despliegue.

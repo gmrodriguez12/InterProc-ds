@@ -17,10 +17,10 @@ Base de acceso administrativo y auditoría, catálogo de tipos/procedimientos co
 
 | Phase | Objective | Features | Dependencies | Status |
 |---|---|---|---|---|
-| 0. Decisiones y fundaciones | Resolver reglas transversales, modelo de datos común y autorización. | RF-02–04; auditoría; roles; archivado; estados; versionado | Decisiones aprobadas | Approved |
-| 1. Acceso y estructura de aplicación | Habilitar acceso seguro, administración de cuentas y navegación autenticada. | RF-01–04, RF-06 (estructura inicial) | Fase 0 | Approved |
-| 2. Catálogo | Crear tipos y procedimientos, con detalle, historial, versionado y archivo. | RF-13–22 | Fase 1 | Approved |
-| 3. Clientes | Gestionar clientes, notas, asociación/listado de trabajos y restricciones de archivo. | RF-23–29 | Fase 1; entidad mínima de trabajo | Approved |
+| 0. Decisiones y fundaciones | Resolver reglas transversales, modelo de datos común y autorización. | RF-02–04; auditoría; roles; archivado; estados; versionado | Decisiones aprobadas | Validated |
+| 1. Acceso y estructura de aplicación | Habilitar acceso seguro, administración de cuentas y navegación autenticada. | RF-01–04, RF-06 (estructura inicial) | Fase 0 | Validated |
+| 2. Catálogo | Crear tipos y procedimientos, con detalle, historial, versionado y archivo. | RF-13–22 | Fase 1 | Validated |
+| 3. Clientes | Gestionar clientes, notas, asociación/listado de trabajos y restricciones de archivo. | RF-23–29 | Fase 1; entidad mínima de trabajo | Validated |
 | 4. Procesos | Crear plantillas ordenadas, costos y conversión a trabajo borrador. | RF-30–37 | Fase 2; decisiones financieras | Proposed |
 | 5. Trabajos | Completar armado, ejecución, avance e historial. | RF-38–47 | Fases 2–4; versión de procedimiento fijada por trabajo | Proposed |
 | 6. Dashboard | Exponer tablero Kanban, tarjetas, indicadores y preferencias. | RF-07–12 | Fases 3–5; reglas de estados/activos | Proposed |
@@ -42,6 +42,7 @@ Las decisiones necesarias para las fases 0–3 están cerradas. Continúan pendi
 
 - 2026-11-10: aprobadas las fases 0–3 y sus decisiones transversales.
 - 2026-11-10: fase 3 incluirá una entidad mínima de trabajo para asociaciones, contadores y restricciones de archivo.
+- 2026-11-10: fases 0–3 implementadas y validadas localmente; no desplegadas.
 
 ## Rules
 

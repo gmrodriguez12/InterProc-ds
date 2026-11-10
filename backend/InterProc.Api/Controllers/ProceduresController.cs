@@ -178,7 +178,14 @@ public sealed class ProceduresController(
         var procedure = await dbContext.Procedures.SingleOrDefaultAsync(item => item.Id == id, cancellationToken);
         if (procedure is null) return NotFound();
         if (procedure.IsArchived == archived) return NoContent();
-        if (!archived && await TitleExists(procedure.ProcedureTypeId, procedure.NormalizedTitle, id, cancellationToken)) return TitleConflict();
+        if (!archived)
+        {
+            if (!await dbContext.ProcedureTypes.AnyAsync(type => type.Id == procedure.ProcedureTypeId && !type.IsArchived, cancellationToken))
+            {
+                return Conflict(new ProblemDetails { Status = 409, Title = "Restore the procedure type first." });
+            }
+            if (await TitleExists(procedure.ProcedureTypeId, procedure.NormalizedTitle, id, cancellationToken)) return TitleConflict();
+        }
         var actor = await CurrentUserAsync();
         procedure.IsArchived = archived;
         procedure.ArchivedAtUtc = archived ? DateTimeOffset.UtcNow : null;

@@ -9,13 +9,13 @@ Functional requirements registered for this project.
 
 | ID | Module | Description | Priority | Status | Feature |
 |---|---|---|---|---|---|
-| RF-01–RF-04 | Acceso y auditoría | Autenticación, alta administrativa, auditoría mínima de archivados/restauraciones y sesión. Fuente: `docs/InterProc_Requerimientos_Funcionales.md`, modificada por decisión del Product Owner del 2026-11-10. | Must | Approved | Base transversal |
+| RF-01–RF-04 | Acceso y auditoría | Autenticación, alta administrativa, auditoría mínima de archivados/restauraciones y sesión. Fuente: `docs/InterProc_Requerimientos_Funcionales.md`, modificada por decisión del Product Owner del 2026-11-10. | Must | Validated | Base transversal |
 | RF-05 | Acceso y auditoría | Búsqueda global. | Should | Proposed | Fase 7 |
 | RF-06 | Acceso y auditoría | Navegación en fase 1; contadores definitivos en fase 7. | Must | Approved | Base transversal |
 | RF-07–RF-12 | Dashboard de trabajos | Kanban, estados, tarjetas, indicadores y preferencias visuales. | Should | Proposed | Dashboard |
-| RF-13–RF-19 | Procedimientos | Catálogo, detalle, versionado, archivo e historial. | Must | Approved | Catálogo |
-| RF-20–RF-22 | Tipos de procedimiento | Alta, edición y archivado de tipos. | Must | Approved | Catálogo |
-| RF-23–RF-29 | Clientes | Gestión, notas editables, trabajos asociados y archivado condicionado. | Must | Approved | Clientes |
+| RF-13–RF-19 | Procedimientos | Catálogo, detalle, versionado, archivo e historial. | Must | Validated | Catálogo |
+| RF-20–RF-22 | Tipos de procedimiento | Alta, edición y archivado de tipos. | Must | Validated | Catálogo |
+| RF-23–RF-29 | Clientes | Gestión, notas editables, trabajos asociados y archivado condicionado. | Must | Validated | Clientes |
 | RF-30–RF-37 | Procesos | Plantillas, composición, costos, cálculos, creación de trabajo y archivado. | Should | Proposed | Procesos |
 | RF-38–RF-47 | Trabajos | Armado, ejecución, avance, historial y archivado. | Must | Proposed | Trabajos |
 | RF-48–RF-50 | Archivo | Listado, restauración y política de borrado. | Must | Proposed | Archivo |

@@ -11,6 +11,9 @@ public sealed class ApplicationDbContext(DbContextOptions<ApplicationDbContext> 
     public DbSet<ProcedureType> ProcedureTypes => Set<ProcedureType>();
     public DbSet<Procedure> Procedures => Set<Procedure>();
     public DbSet<ProcedureVersion> ProcedureVersions => Set<ProcedureVersion>();
+    public DbSet<Client> Clients => Set<Client>();
+    public DbSet<ClientNote> ClientNotes => Set<ClientNote>();
+    public DbSet<WorkItem> WorkItems => Set<WorkItem>();
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
@@ -68,6 +71,47 @@ public sealed class ApplicationDbContext(DbContextOptions<ApplicationDbContext> 
                 .WithMany(procedure => procedure.Versions)
                 .HasForeignKey(version => version.ProcedureId)
                 .OnDelete(DeleteBehavior.Cascade);
+        });
+
+        modelBuilder.Entity<Client>(entity =>
+        {
+            entity.Property(client => client.Name).HasMaxLength(200);
+            entity.Property(client => client.NormalizedName).HasMaxLength(200);
+            entity.Property(client => client.TaxId).HasMaxLength(100);
+            entity.Property(client => client.ContactPerson).HasMaxLength(160);
+            entity.Property(client => client.Email).HasMaxLength(256);
+            entity.Property(client => client.Phone).HasMaxLength(80);
+            entity.Property(client => client.Address).HasMaxLength(500);
+            entity.Property(client => client.ConcurrencyToken).IsConcurrencyToken();
+            entity.HasIndex(client => client.NormalizedName).IsUnique().HasFilter("\"IsArchived\" = false");
+        });
+
+        modelBuilder.Entity<WorkItem>(entity =>
+        {
+            entity.ToTable(table =>
+            {
+                table.HasCheckConstraint("CK_WorkItems_ProgressPercent", "\"ProgressPercent\" >= 0 AND \"ProgressPercent\" <= 100");
+                table.HasCheckConstraint("CK_WorkItems_State", "\"State\" IN ('Borrador', 'Presupuesto', 'Planificado', 'En Ejecución', 'Terminado', 'Cancelado', 'Pausado', 'En Mantenimiento')");
+            });
+            entity.Property(work => work.Name).HasMaxLength(200);
+            entity.Property(work => work.Code).HasMaxLength(40);
+            entity.Property(work => work.State).HasMaxLength(40);
+            entity.HasIndex(work => work.Code).IsUnique();
+            entity.HasOne(work => work.Client).WithMany(client => client.Works)
+                .HasForeignKey(work => work.ClientId).OnDelete(DeleteBehavior.Restrict);
+        });
+
+        modelBuilder.Entity<ClientNote>(entity =>
+        {
+            entity.Property(note => note.CreatedByUserId).HasMaxLength(450);
+            entity.Property(note => note.CreatedByDisplayName).HasMaxLength(160);
+            entity.Property(note => note.UpdatedByUserId).HasMaxLength(450);
+            entity.Property(note => note.UpdatedByDisplayName).HasMaxLength(160);
+            entity.Property(note => note.ConcurrencyToken).IsConcurrencyToken();
+            entity.HasOne(note => note.Client).WithMany(client => client.Notes)
+                .HasForeignKey(note => note.ClientId).OnDelete(DeleteBehavior.Cascade);
+            entity.HasOne(note => note.WorkItem).WithMany(work => work.ClientNotes)
+                .HasForeignKey(note => note.WorkItemId).OnDelete(DeleteBehavior.Restrict);
         });
     }
 }

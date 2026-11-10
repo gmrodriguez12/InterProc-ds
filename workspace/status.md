@@ -3,11 +3,11 @@
 
 ## Current phase
 
-DevHarness — Implementación
+Development — Fases 0–3 entregadas
 
 ## Active tasks
 
-- TASK-002 — Implementación de fases 0–3 (In Progress; autorizada por el Product Owner el 2026-11-10).
+None.
 
 ## Blocked tasks
 
@@ -26,9 +26,10 @@ None.
 - Los trabajos fijan una versión de cada procedimiento. Solo `admin` puede borrar una versión no vigente y nunca si fue utilizada.
 - Los clientes pueden ser personas o empresas uruguayas o extranjeras. Solo el nombre es obligatorio; RUT es texto libre opcional. Las notas pueden editarse y advierten que no se incluyan datos sensibles.
 - RF-50 se aplicará literalmente: no se borrarán ni anonimizarán datos de clientes archivados. Esta decisión requiere revisión profesional antes de producción.
+- TASK-002 completó y validó las fases 0–3 el 2026-11-10. No se realizó despliegue ni push.
 
 ## Next recommended work
 
-1. Implementar y validar la fase 3 (clientes).
-2. Cerrar TASK-002 si toda la validación final resulta correcta.
-3. No hacer push ni desplegar.
+1. Resolver las decisiones financieras y de proceso necesarias para la fase 4.
+2. Registrar y aprobar la siguiente tarea antes de implementar fases 4–7.
+3. Realizar revisión profesional de privacidad y retención antes de producción.

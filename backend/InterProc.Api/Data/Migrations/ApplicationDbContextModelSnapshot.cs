@@ -148,6 +148,117 @@ namespace InterProc.Api.Data.Migrations
                     b.ToTable("AuditEvents");
                 });
 
+            modelBuilder.Entity("InterProc.Api.Domain.Client", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid");
+
+                    b.Property<string>("Address")
+                        .HasMaxLength(500)
+                        .HasColumnType("character varying(500)");
+
+                    b.Property<DateTimeOffset?>("ArchivedAtUtc")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<string>("ArchivedByUserId")
+                        .HasColumnType("text");
+
+                    b.Property<Guid>("ConcurrencyToken")
+                        .IsConcurrencyToken()
+                        .HasColumnType("uuid");
+
+                    b.Property<string>("ContactPerson")
+                        .HasMaxLength(160)
+                        .HasColumnType("character varying(160)");
+
+                    b.Property<string>("Email")
+                        .HasMaxLength(256)
+                        .HasColumnType("character varying(256)");
+
+                    b.Property<bool>("IsArchived")
+                        .HasColumnType("boolean");
+
+                    b.Property<string>("Name")
+                        .IsRequired()
+                        .HasMaxLength(200)
+                        .HasColumnType("character varying(200)");
+
+                    b.Property<string>("NormalizedName")
+                        .IsRequired()
+                        .HasMaxLength(200)
+                        .HasColumnType("character varying(200)");
+
+                    b.Property<string>("Phone")
+                        .HasMaxLength(80)
+                        .HasColumnType("character varying(80)");
+
+                    b.Property<string>("TaxId")
+                        .HasMaxLength(100)
+                        .HasColumnType("character varying(100)");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("NormalizedName")
+                        .IsUnique()
+                        .HasFilter("\"IsArchived\" = false");
+
+                    b.ToTable("Clients");
+                });
+
+            modelBuilder.Entity("InterProc.Api.Domain.ClientNote", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid");
+
+                    b.Property<Guid>("ClientId")
+                        .HasColumnType("uuid");
+
+                    b.Property<Guid>("ConcurrencyToken")
+                        .IsConcurrencyToken()
+                        .HasColumnType("uuid");
+
+                    b.Property<DateTimeOffset>("CreatedAtUtc")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<string>("CreatedByDisplayName")
+                        .IsRequired()
+                        .HasMaxLength(160)
+                        .HasColumnType("character varying(160)");
+
+                    b.Property<string>("CreatedByUserId")
+                        .IsRequired()
+                        .HasMaxLength(450)
+                        .HasColumnType("character varying(450)");
+
+                    b.Property<string>("Text")
+                        .IsRequired()
+                        .HasColumnType("text");
+
+                    b.Property<DateTimeOffset?>("UpdatedAtUtc")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<string>("UpdatedByDisplayName")
+                        .HasMaxLength(160)
+                        .HasColumnType("character varying(160)");
+
+                    b.Property<string>("UpdatedByUserId")
+                        .HasMaxLength(450)
+                        .HasColumnType("character varying(450)");
+
+                    b.Property<Guid?>("WorkItemId")
+                        .HasColumnType("uuid");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("ClientId");
+
+                    b.HasIndex("WorkItemId");
+
+                    b.ToTable("ClientNotes");
+                });
+
             modelBuilder.Entity("InterProc.Api.Domain.Procedure", b =>
                 {
                     b.Property<Guid>("Id")
@@ -296,6 +407,51 @@ namespace InterProc.Api.Data.Migrations
                     b.ToTable("ProcedureVersions");
                 });
 
+            modelBuilder.Entity("InterProc.Api.Domain.WorkItem", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid");
+
+                    b.Property<Guid>("ClientId")
+                        .HasColumnType("uuid");
+
+                    b.Property<string>("Code")
+                        .IsRequired()
+                        .HasMaxLength(40)
+                        .HasColumnType("character varying(40)");
+
+                    b.Property<bool>("IsArchived")
+                        .HasColumnType("boolean");
+
+                    b.Property<string>("Name")
+                        .IsRequired()
+                        .HasMaxLength(200)
+                        .HasColumnType("character varying(200)");
+
+                    b.Property<int>("ProgressPercent")
+                        .HasColumnType("integer");
+
+                    b.Property<string>("State")
+                        .IsRequired()
+                        .HasMaxLength(40)
+                        .HasColumnType("character varying(40)");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("ClientId");
+
+                    b.HasIndex("Code")
+                        .IsUnique();
+
+                    b.ToTable("WorkItems", t =>
+                        {
+                            t.HasCheckConstraint("CK_WorkItems_ProgressPercent", "\"ProgressPercent\" >= 0 AND \"ProgressPercent\" <= 100");
+
+                            t.HasCheckConstraint("CK_WorkItems_State", "\"State\" IN ('Borrador', 'Presupuesto', 'Planificado', 'En Ejecución', 'Terminado', 'Cancelado', 'Pausado', 'En Mantenimiento')");
+                        });
+                });
+
             modelBuilder.Entity("Microsoft.AspNetCore.Identity.IdentityRole", b =>
                 {
                     b.Property<string>("Id")
@@ -428,6 +584,24 @@ namespace InterProc.Api.Data.Migrations
                     b.ToTable("AspNetUserTokens", (string)null);
                 });
 
+            modelBuilder.Entity("InterProc.Api.Domain.ClientNote", b =>
+                {
+                    b.HasOne("InterProc.Api.Domain.Client", "Client")
+                        .WithMany("Notes")
+                        .HasForeignKey("ClientId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.HasOne("InterProc.Api.Domain.WorkItem", "WorkItem")
+                        .WithMany("ClientNotes")
+                        .HasForeignKey("WorkItemId")
+                        .OnDelete(DeleteBehavior.Restrict);
+
+                    b.Navigation("Client");
+
+                    b.Navigation("WorkItem");
+                });
+
             modelBuilder.Entity("InterProc.Api.Domain.Procedure", b =>
                 {
                     b.HasOne("InterProc.Api.Domain.ProcedureType", "ProcedureType")
@@ -448,6 +622,17 @@ namespace InterProc.Api.Data.Migrations
                         .IsRequired();
 
                     b.Navigation("Procedure");
+                });
+
+            modelBuilder.Entity("InterProc.Api.Domain.WorkItem", b =>
+                {
+                    b.HasOne("InterProc.Api.Domain.Client", "Client")
+                        .WithMany("Works")
+                        .HasForeignKey("ClientId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.Navigation("Client");
                 });
 
             modelBuilder.Entity("Microsoft.AspNetCore.Identity.IdentityRoleClaim<string>", b =>
@@ -501,6 +686,13 @@ namespace InterProc.Api.Data.Migrations
                         .IsRequired();
                 });
 
+            modelBuilder.Entity("InterProc.Api.Domain.Client", b =>
+                {
+                    b.Navigation("Notes");
+
+                    b.Navigation("Works");
+                });
+
             modelBuilder.Entity("InterProc.Api.Domain.Procedure", b =>
                 {
                     b.Navigation("Versions");
@@ -509,6 +701,11 @@ namespace InterProc.Api.Data.Migrations
             modelBuilder.Entity("InterProc.Api.Domain.ProcedureType", b =>
                 {
                     b.Navigation("Procedures");
+                });
+
+            modelBuilder.Entity("InterProc.Api.Domain.WorkItem", b =>
+                {
+                    b.Navigation("ClientNotes");
                 });
 #pragma warning restore 612, 618
         }

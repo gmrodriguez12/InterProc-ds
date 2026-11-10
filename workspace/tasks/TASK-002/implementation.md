@@ -21,4 +21,10 @@
 
 ## Fase 3 — Clientes
 
-Pendiente.
+- Se implementaron clientes personas o empresas con nombre activo único y RUT/identificador extranjero libre, contacto, email, teléfono y dirección opcionales.
+- La ficha incluye listado y contadores de trabajos, estados y avance. El nombre se resuelve por relación, por lo que sus cambios se reflejan en los trabajos.
+- Se agregó la fundación mínima de trabajo con código, cliente, estado, avance e integridad de estados/porcentajes.
+- El archivo de un cliente se bloquea si tiene un trabajo activo que no esté `Terminado` o `Cancelado`.
+- Se implementaron notas generales o vinculadas a trabajos, editables, con autor y fechas de creación/edición.
+- La interfaz muestra la advertencia aprobada sobre datos sensibles y un diálogo con `Descartar y salir`, `Guardar y salir` y `Permanecer` ante cambios sin guardar.
+- Archivo y restauración mantienen la política literal de RF-50 y registran la auditoría mínima.
