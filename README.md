@@ -150,6 +150,6 @@ The production browser smoke test must use the public HTTPS address behind the T
 ## Application
 
 - `frontend/interproc-web` is a standalone Angular application with strict TypeScript, Router, HttpClient, and reactive forms.
-- `/login`, `/change-password`, `/dashboard`, `/admin/users`, and `/admin/audit` integrate with the cookie-based auth API. There is no public signup route. The frontend uses the CSRF cookie/header and stores no authentication tokens in browser storage.
+- `/login`, `/change-password`, `/dashboard`, `/procedures`, `/admin/users`, and `/admin/audit` integrate with the cookie-based API. There is no public signup route. The frontend uses the CSRF cookie/header and stores no authentication tokens in browser storage.
 - The backend is a single ASP.NET Core Web API project in `backend/InterProc.Api`.
 - Authenticated sessions are protected by ASP.NET Core Identity and PostgreSQL. Data Protection keys persist across container restarts.

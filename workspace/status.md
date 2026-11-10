@@ -29,6 +29,6 @@ None.
 
 ## Next recommended work
 
-1. Implementar y validar la fase 2 (catálogo).
-2. Implementar y validar la fase 3 (clientes).
-3. Crear commits locales por incremento; no hacer push ni desplegar.
+1. Implementar y validar la fase 3 (clientes).
+2. Cerrar TASK-002 si toda la validación final resulta correcta.
+3. No hacer push ni desplegar.

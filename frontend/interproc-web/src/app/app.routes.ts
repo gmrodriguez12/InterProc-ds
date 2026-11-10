@@ -5,6 +5,7 @@ import { LoginComponent } from './pages/login.component';
 import { ChangePasswordComponent } from './pages/change-password.component';
 import { UsersComponent } from './pages/users.component';
 import { AuditComponent } from './pages/audit.component';
+import { ProceduresComponent } from './pages/procedures.component';
 import {
   adminGuard,
   anonymousGuard,
@@ -20,6 +21,7 @@ export const routes: Routes = [
     canActivate: [anonymousGuard],
     title: 'Sign in · InterProc',
   },
+  { path: 'procedures', component: ProceduresComponent, canActivate: [authenticatedGuard], title: 'Procedures · InterProc' },
   { path: 'change-password', component: ChangePasswordComponent, canActivate: [authenticatedGuard], title: 'Change password · InterProc' },
   {
     path: 'dashboard',

@@ -19,6 +19,7 @@ import { AuthService } from './services/auth.service';
         <nav class="main-nav" aria-label="Main navigation">
           @if (auth.isAuthenticated()) {
             <a routerLink="/dashboard" routerLinkActive="active" ariaCurrentWhenActive="page">Dashboard</a>
+            <a routerLink="/procedures" routerLinkActive="active" ariaCurrentWhenActive="page">Procedures</a>
             @if (auth.isAdmin()) {
               <a routerLink="/admin/users" routerLinkActive="active" ariaCurrentWhenActive="page">Accounts</a>
               <a routerLink="/admin/audit" routerLinkActive="active" ariaCurrentWhenActive="page">Audit</a>

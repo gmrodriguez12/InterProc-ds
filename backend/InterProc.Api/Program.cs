@@ -114,6 +114,7 @@ public class Program
         }
         builder.Services.AddScoped<IAuthService, AuthService>();
         builder.Services.AddScoped<BootstrapService>();
+        builder.Services.AddScoped<AuditService>();
 
         if (builder.Environment.IsDevelopment())
         {

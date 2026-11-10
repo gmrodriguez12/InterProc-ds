@@ -12,7 +12,12 @@
 
 ## Fase 2 — Catálogo
 
-Pendiente.
+- Se implementaron tipos de procedimiento con nombre activo único, ícono, conteo, edición y archivo condicionado.
+- Se implementaron procedimientos con tipo, ícono, descripción, pasos, Mermaid opcional, tiempo estimado, archivo y restauración.
+- El alta genera la versión 1. Cambiar pasos o Mermaid exige motivo y crea una versión inmutable; los demás campos no versionan.
+- El historial conserva autor, fecha, motivo y trabajo de origen. Solo `admin` puede eliminar versiones no vigentes y no utilizadas.
+- Los archivos y restauraciones generan los únicos eventos de auditoría funcional aprobados.
+- Angular incorpora pestañas por tipo, búsqueda, formularios, historial y render Mermaid seguro con carga diferida.
 
 ## Fase 3 — Clientes
 
