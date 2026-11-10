@@ -9,6 +9,11 @@ EXPOSE 4200
 
 CMD ["npm", "start", "--", "--host", "0.0.0.0", "--poll", "1000", "--proxy-config", "proxy.conf.json"]
 
+FROM development AS test
+
+COPY frontend/interproc-web/ ./
+RUN npm test
+
 FROM node:24-alpine AS build
 
 WORKDIR /workspace/frontend/interproc-web

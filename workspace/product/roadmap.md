@@ -11,15 +11,15 @@ Gestionar procedimientos reutilizables y su ejecución en trabajos para clientes
 
 ## MVP Scope
 
-Base de acceso administrativo y auditoría, catálogo de tipos/procedimientos con versionado, clientes, procesos reutilizables y trabajos con armado, ejecución e historial. El dashboard y el archivo global completan la operación del MVP. La búsqueda global se propone para una iteración posterior al flujo operativo inicial.
+Base de acceso administrativo y autorización, catálogo de tipos/procedimientos con versionado, clientes, procesos reutilizables y trabajos con armado, ejecución e historial. El dashboard y el archivo global completan la operación del MVP. La búsqueda global se propone para una iteración posterior al flujo operativo inicial. La auditoría funcional queda fuera de v1.
 
 ## Implementation Phases
 
 | Phase | Objective | Features | Dependencies | Status |
 |---|---|---|---|---|
-| 0. Decisiones y fundaciones | Resolver reglas transversales, modelo de datos común y autorización. | RF-02–04; auditoría; roles; archivado; estados; versionado | Aprobación de roadmap y decisiones pendientes | Proposed |
+| 0. Decisiones y fundaciones | Resolver reglas transversales, modelo de datos común y autorización. | RF-02–04; identidad; roles; archivado; estados; versionado | Aprobación de roadmap y decisiones pendientes | Proposed |
 | 1. Acceso y estructura de aplicación | Habilitar acceso seguro, administración de cuentas y navegación autenticada. | RF-01–04, RF-06 (estructura inicial) | Fase 0 | Proposed |
-| 2. Catálogo | Crear tipos y procedimientos, con detalle, historial, versionado y archivo. | RF-13–22 | Fase 1; decisiones de versiones y auditoría | Proposed |
+| 2. Catálogo | Crear tipos y procedimientos, con detalle, historial, versionado y archivo. | RF-13–22 | Fase 1; decisiones de versiones | Proposed |
 | 3. Clientes | Gestionar clientes, notas, asociación/listado de trabajos y restricciones de archivo. | RF-23–29 | Fase 1; entidades de trabajo mínimas para contadores y asociación | Proposed |
 | 4. Procesos | Crear plantillas ordenadas, costos y conversión a trabajo borrador. | RF-30–37 | Fase 2; decisiones financieras | Proposed |
 | 5. Trabajos | Completar armado, ejecución, avance e historial. | RF-38–47 | Fases 2–4; versión de procedimiento fijada por trabajo | Proposed |
@@ -36,7 +36,7 @@ Fase 0: resolver decisiones de producto y actualizar el modelo de acceso antes d
 
 ## Pending Decisions
 
-Ver `workspace/product/requirements.md` y `workspace/tasks/TASK-001/analysis.md`. RF-02 quedó aclarado: solo `admin` crea cuentas y les asigna el rol `usuario` o `admin`; no hay registro público. El primer `admin` se provisiona mediante un comando .NET que usa Identity y variables de entorno; no se insertará directamente con SQL. Quedan por definir el alcance de auditoría, las políticas de versión y los estados.
+Ver `workspace/product/requirements.md` y `workspace/tasks/TASK-001/analysis.md`. RF-01/RF-02 quedaron aclarados: nombre de usuario y email son distintos y únicos; solo `admin` crea cuentas y les asigna el rol `usuario` o `admin`; no hay registro público. El primer `admin` se provisiona mediante un comando .NET que usa Identity y variables de entorno; no se insertará directamente con SQL. RF-03 (auditoría) queda fuera de v1 y RF-04 no mostrará la etiqueta "auditada". Quedan por definir las políticas de versión y estados.
 
 ## Roadmap Changes
 

@@ -1,5 +1,6 @@
 
 using InterProc.Api.Data;
+using InterProc.Api.Security;
 using InterProc.Api.Services;
 using Microsoft.AspNetCore.Authentication.Cookies;
 using Microsoft.AspNetCore.DataProtection;
@@ -34,9 +35,19 @@ public class Program
         builder.Services.AddDbContext<ApplicationDbContext>(options =>
             options.UseNpgsql(connectionString, npgsql => npgsql.EnableRetryOnFailure()));
         builder.Services
-            .AddIdentity<IdentityUser, IdentityRole>(options =>
+            .AddIdentity<ApplicationUser, IdentityRole>(options =>
             {
                 options.User.RequireUniqueEmail = true;
+                options.User.AllowedUserNameCharacters =
+                    "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789-._";
+                options.Password.RequiredLength = 8;
+                options.Password.RequireDigit = true;
+                options.Password.RequireLowercase = true;
+                options.Password.RequireUppercase = true;
+                options.Password.RequireNonAlphanumeric = true;
+                options.Lockout.AllowedForNewUsers = true;
+                options.Lockout.MaxFailedAccessAttempts = 5;
+                options.Lockout.DefaultLockoutTimeSpan = TimeSpan.FromMinutes(15);
                 options.SignIn.RequireConfirmedAccount = false;
                 options.SignIn.RequireConfirmedEmail = false;
             })
@@ -64,6 +75,10 @@ public class Program
                 return Task.CompletedTask;
             };
         });
+        builder.Services.Configure<SecurityStampValidatorOptions>(options =>
+        {
+            options.ValidationInterval = TimeSpan.Zero;
+        });
         builder.Services.AddAntiforgery(options =>
         {
             options.HeaderName = "X-XSRF-TOKEN";
@@ -86,6 +101,7 @@ public class Program
                 .SetApplicationName("InterProc");
         }
         builder.Services.AddScoped<IAuthService, AuthService>();
+        builder.Services.AddScoped<AdminBootstrapService>();
 
         if (builder.Environment.IsDevelopment())
         {
@@ -102,12 +118,21 @@ public class Program
             await dbContext.Database.MigrateAsync();
         }
 
+        if (args.Length > 0 && args[0].Equals("bootstrap-admin", StringComparison.OrdinalIgnoreCase))
+        {
+            await using var scope = app.Services.CreateAsyncScope();
+            var bootstrap = scope.ServiceProvider.GetRequiredService<AdminBootstrapService>();
+            await bootstrap.RunAsync(CancellationToken.None);
+            return;
+        }
+
         if (app.Environment.IsDevelopment())
         {
             app.MapOpenApi();
         }
 
         app.UseAuthentication();
+        app.UseMiddleware<AccountStateMiddleware>();
         app.UseAuthorization();
         app.MapControllers();
         app.Run();

@@ -27,15 +27,17 @@ Functional requirements registered for this project.
 - Validated
 - Cancelled
 
-## Pending Clarifications
+## Decisions and Pending Clarifications
 
-1. RF-02 aclarado por el Product Owner: no hay registro público; solo `admin` puede crear cuentas, y asigna a cada una el rol `usuario` o `admin`. El primer `admin` se provisionará mediante un comando de inicialización .NET que usa ASP.NET Core Identity y recibe sus datos por variables de entorno. Cuenta inicial: `gonza@gmrodriguez.com`. No guardar la contraseña en el repositorio. El esqueleto actual ofrece signup y debe ajustarse a esta regla.
-2. Definir alcance de RF-03 (qué eventos se auditan y política de retención); roles disponibles y capacidad de alta ya están definidos.
-3. Definir estados activos/abiertos y transiciones válidas de trabajos; afectan RF-07, RF-11, RF-29 y RF-44.
-4. Definir si cada trabajo fija una versión de procedimiento o sigue la vigente; precisar el efecto de editar pasos desde ejecución (RF-16, RF-18, RF-42–43).
-5. Definir políticas de datos personales de clientes (RUT, contacto, email, teléfono, dirección), retención y acceso. Revisión legal/compliance pendiente; no hay configuración de `agents/legal.toml` disponible en este repositorio.
-6. Definir precisión/redondeo y semántica financiera para costos, ganancia y margen (RF-33–35).
-7. Precisar formato/unicidad del código TRB, alcance de la búsqueda y permisos de restauración/borrado de versiones.
+1. RF-01/RF-02 aclarados por el Product Owner e implementados en TASK-002: cada cuenta tiene nombre de usuario y email distintos, ambos únicos. No hay registro público; solo `admin` puede crear cuentas y asignar el rol `usuario` o `admin`. El primer `admin` se provisiona mediante un comando .NET/Identity con variables de entorno. Cuenta inicial: `gonza@gmrodriguez.com`. La contraseña no se guarda en el repositorio.
+2. Permisos acordados para v1: `admin` administra cuentas y accede a toda la aplicación; `usuario` accede a los módulos operativos, pero no administra cuentas.
+3. RF-03 queda fuera de v1 por decisión del Product Owner. No se implementará auditoría funcional en esta primera versión.
+4. RF-04 aclarado por el Product Owner: en v1 se muestran el nombre de usuario y el rol de la sesión, junto con la opción de cerrar sesión. Se elimina la etiqueta "auditada" porque RF-03 queda fuera de v1.
+5. Definir estados activos/abiertos y transiciones válidas de trabajos; afectan RF-07, RF-11, RF-29 y RF-44.
+6. Definir si cada trabajo fija una versión de procedimiento o sigue la vigente; precisar el efecto de editar pasos desde ejecución (RF-16, RF-18, RF-42–43).
+7. Definir políticas de datos personales de clientes (RUT, contacto, email, teléfono, dirección), retención y acceso. Revisión legal/compliance pendiente; no hay configuración de `agents/legal.toml` disponible en este repositorio.
+8. Definir precisión/redondeo y semántica financiera para costos, ganancia y margen (RF-33–35).
+9. Precisar formato/unicidad del código TRB, alcance de la búsqueda y permisos de restauración/borrado de versiones.
 
 ## Notes
 

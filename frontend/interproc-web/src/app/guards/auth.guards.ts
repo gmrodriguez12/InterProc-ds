@@ -12,18 +12,15 @@ export const authenticatedGuard: CanActivateFn = async (_route, state) => {
     return false;
   }
 
-  if (auth.isAuthenticated()) {
-    return true;
+  const user = auth.currentUser();
+  if (!user) {
+    return router.createUrlTree(['/login'], { queryParams: { returnUrl: state.url } });
   }
 
-  return router.createUrlTree([
-    auth.setupStatus()?.hasUsers === false ? '/signup' : '/login',
-  ], {
-    queryParams: { returnUrl: state.url },
-  });
+  return user.mustChangePassword ? router.parseUrl('/change-password') : true;
 };
 
-export const anonymousGuard: CanActivateFn = async (_route, state) => {
+export const passwordChangeGuard: CanActivateFn = async () => {
   const auth = inject(AuthService);
   const router = inject(Router);
 
@@ -32,15 +29,49 @@ export const anonymousGuard: CanActivateFn = async (_route, state) => {
     return false;
   }
 
-  if (auth.isAuthenticated()) {
-    return router.parseUrl('/dashboard');
+  const user = auth.currentUser();
+  if (!user) {
+    return router.parseUrl('/login');
   }
 
-  if (auth.setupStatus()?.hasUsers === false && state.url.startsWith('/login')) {
-    return router.parseUrl('/signup');
+  return user.mustChangePassword ? true : router.parseUrl('/dashboard');
+};
+
+export const adminGuard: CanActivateFn = async () => {
+  const auth = inject(AuthService);
+  const router = inject(Router);
+
+  await auth.initialize();
+  if (auth.initializationError()) {
+    return false;
   }
 
-  return true;
+  const user = auth.currentUser();
+  if (!user) {
+    return router.parseUrl('/login');
+  }
+  if (user.mustChangePassword) {
+    return router.parseUrl('/change-password');
+  }
+
+  return user.role === 'admin' ? true : router.parseUrl('/dashboard');
+};
+
+export const anonymousGuard: CanActivateFn = async () => {
+  const auth = inject(AuthService);
+  const router = inject(Router);
+
+  await auth.initialize();
+  if (auth.initializationError()) {
+    return false;
+  }
+
+  const user = auth.currentUser();
+  if (!user) {
+    return true;
+  }
+
+  return router.parseUrl(user.mustChangePassword ? '/change-password' : '/dashboard');
 };
 
 export const startupRedirectGuard: CanActivateFn = async () => {
@@ -52,11 +83,8 @@ export const startupRedirectGuard: CanActivateFn = async () => {
     return false;
   }
 
+  const user = auth.currentUser();
   return router.parseUrl(
-    auth.isAuthenticated()
-      ? '/dashboard'
-      : auth.setupStatus()?.hasUsers === false
-        ? '/signup'
-        : '/login',
+    user ? (user.mustChangePassword ? '/change-password' : '/dashboard') : '/login',
   );
 };

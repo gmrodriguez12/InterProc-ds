@@ -11,10 +11,12 @@ Se revisaron los 50 requerimientos agrupados en ocho módulos, el estado del wor
 - El frontend cuenta con pantallas de login/signup y un dashboard placeholder, además de guards.
 - No se encontraron entidades ni módulos de negocio para procedimientos, tipos, clientes, procesos, trabajos o archivo.
 - El esqueleto ofrece signup. El Product Owner aclaró RF-02: no hay registro público; solo `admin` crea cuentas y asigna el rol `usuario` o `admin`. El primer `admin` se provisionará mediante un comando .NET de inicialización que usa ASP.NET Core Identity y variables de entorno. La cuenta inicial será `gonza@gmrodriguez.com`; la contraseña no se guarda en los archivos del proyecto.
+- El Product Owner aclaró que nombre de usuario y email serán distintos y únicos. `admin` administrará cuentas y tendrá acceso total; `usuario` accederá a los módulos operativos sin administrar cuentas.
+- RF-03 (auditoría funcional) queda fuera de v1. Por decisión del Product Owner, RF-04 mostrará nombre y rol, pero no la etiqueta "auditada".
 
 ## Dependencias funcionales
 
-1. Resolver identidad, roles, auditoría y políticas transversales.
+1. Resolver identidad, roles y políticas transversales; diferir la auditoría funcional a una versión posterior.
 2. Tipos preceden a procedimientos; procedimientos son la base de procesos y trabajos.
 3. Clientes y catálogo preceden a la operación completa de trabajos.
 4. Procesos dependen del catálogo; su conversión crea trabajos.
@@ -33,7 +35,7 @@ Se revisaron los 50 requerimientos agrupados en ocho módulos, el estado del wor
 ## Riesgos y decisiones previas
 
 - Aplicar RF-02 frente al signup público existente: solo `admin` crea cuentas y asigna uno de los dos roles; provisionar el primer `admin` mediante comando .NET/Identity usando variables de entorno (correo inicial: `gonza@gmrodriguez.com`). No insertar el usuario directamente en SQL ni registrar la contraseña en el repositorio.
-- Acordar roles/permisos y qué acciones/campos cubre la auditoría RF-03.
+- RF-04 queda limitado en v1 a mostrar nombre y rol y permitir cerrar sesión; no se mostrará la etiqueta "auditada".
 - Especificar estados activos/abiertos y transiciones de trabajo.
 - Definir cómo los trabajos conservan una versión de procedimiento y cómo impacta la edición durante ejecución.
 - Acordar redondeos y significados financieros de RF-33–35.

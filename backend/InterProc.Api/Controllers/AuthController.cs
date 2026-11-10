@@ -1,5 +1,6 @@
 using System.ComponentModel.DataAnnotations;
 using System.Security.Claims;
+using InterProc.Api.Data;
 using InterProc.Api.Services;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Antiforgery;
@@ -13,62 +14,84 @@ namespace InterProc.Api.Controllers;
 [AutoValidateAntiforgeryToken]
 public sealed class AuthController(
     IAuthService authService,
-    UserManager<IdentityUser> userManager,
-    SignInManager<IdentityUser> signInManager,
+    UserManager<ApplicationUser> userManager,
+    SignInManager<ApplicationUser> signInManager,
     IAntiforgery antiforgery,
     IWebHostEnvironment environment) : ControllerBase
 {
-    [HttpPost("signup")]
-    [ProducesResponseType<AuthenticatedUserResponse>(StatusCodes.Status201Created)]
-    [ProducesResponseType<ValidationProblemDetails>(StatusCodes.Status400BadRequest)]
-    public async Task<IActionResult> SignUp(
-        SignUpRequest request,
-        CancellationToken cancellationToken)
-    {
-        var (user, result) = await authService.RegisterAsync(
-            request.Email,
-            request.Password,
-            cancellationToken);
-
-        if (!result.Succeeded)
-        {
-            return BadRequest(new ValidationProblemDetails(ToSafeValidationErrors(result)));
-        }
-
-        await signInManager.SignInAsync(user!, isPersistent: false);
-        StoreAntiforgeryToken();
-        var response = await CreateUserResponseAsync(user!);
-        return CreatedAtAction(nameof(Me), response);
-    }
-
+    [AllowAnonymous]
     [HttpPost("login")]
     [ProducesResponseType<AuthenticatedUserResponse>(StatusCodes.Status200OK)]
     [ProducesResponseType<ProblemDetails>(StatusCodes.Status401Unauthorized)]
     public async Task<IActionResult> Login(SignInRequest request)
     {
+        var user = await authService.FindByIdentifierAsync(request.Identifier);
+        if (user is null || !user.IsActive)
+        {
+            return AuthenticationFailed();
+        }
+
         var result = await signInManager.PasswordSignInAsync(
-            request.Email,
+            user,
             request.Password,
             isPersistent: false,
             lockoutOnFailure: true);
 
         if (!result.Succeeded)
         {
-            return Unauthorized(new ProblemDetails
-            {
-                Status = StatusCodes.Status401Unauthorized,
-                Title = "Authentication failed",
-                Detail = "The email or password is incorrect."
-            });
+            return AuthenticationFailed();
         }
 
         StoreAntiforgeryToken();
-        var user = await userManager.FindByEmailAsync(request.Email);
-        if (user is null)
+        return Ok(await CreateUserResponseAsync(user));
+    }
+
+    [AllowAnonymous]
+    [HttpGet("session")]
+    [ProducesResponseType<SessionResponse>(StatusCodes.Status200OK)]
+    public async Task<IActionResult> Session(CancellationToken cancellationToken)
+    {
+        StoreAntiforgeryToken();
+
+        AuthenticatedUserResponse? currentUser = null;
+        if (User.Identity?.IsAuthenticated == true)
         {
-            throw new InvalidOperationException("The authenticated account could not be found.");
+            var user = await userManager.GetUserAsync(User);
+            if (user is not null && user.IsActive)
+            {
+                currentUser = await CreateUserResponseAsync(user);
+            }
         }
 
+        return Ok(new SessionResponse(
+            currentUser,
+            !await authService.HasUsersAsync(cancellationToken)));
+    }
+
+    [Authorize]
+    [HttpPost("change-password")]
+    [ProducesResponseType<AuthenticatedUserResponse>(StatusCodes.Status200OK)]
+    [ProducesResponseType<ValidationProblemDetails>(StatusCodes.Status400BadRequest)]
+    public async Task<IActionResult> ChangePassword(ChangePasswordRequest request)
+    {
+        var user = await userManager.GetUserAsync(User);
+        if (user is null || !user.IsActive)
+        {
+            return Unauthorized();
+        }
+
+        var result = await authService.ChangePasswordAsync(
+            user,
+            request.CurrentPassword,
+            request.NewPassword,
+            HttpContext.RequestAborted);
+        if (!result.Succeeded)
+        {
+            return BadRequest(new ValidationProblemDetails(ToSafeValidationErrors(result)));
+        }
+
+        await signInManager.RefreshSignInAsync(user);
+        StoreAntiforgeryToken();
         return Ok(await CreateUserResponseAsync(user));
     }
 
@@ -82,29 +105,13 @@ public sealed class AuthController(
         return NoContent();
     }
 
-    [Authorize]
-    [HttpGet("me")]
-    [ProducesResponseType<AuthenticatedUserResponse>(StatusCodes.Status200OK)]
-    [ProducesResponseType(StatusCodes.Status401Unauthorized)]
-    public async Task<IActionResult> Me()
-    {
-        var user = await userManager.GetUserAsync(User);
-        if (user is null)
+    private UnauthorizedObjectResult AuthenticationFailed() =>
+        Unauthorized(new ProblemDetails
         {
-            return Unauthorized();
-        }
-
-        return Ok(await CreateUserResponseAsync(user));
-    }
-
-    [HttpGet("setup-status")]
-    [ProducesResponseType<SetupStatusResponse>(StatusCodes.Status200OK)]
-    public async Task<IActionResult> SetupStatus(CancellationToken cancellationToken)
-    {
-        StoreAntiforgeryToken();
-
-        return Ok(new SetupStatusResponse(await authService.HasUsersAsync(cancellationToken)));
-    }
+            Status = StatusCodes.Status401Unauthorized,
+            Title = "Authentication failed",
+            Detail = "The username/email or password is incorrect."
+        });
 
     private void StoreAntiforgeryToken()
     {
@@ -118,10 +125,23 @@ public sealed class AuthController(
         });
     }
 
-    private async Task<AuthenticatedUserResponse> CreateUserResponseAsync(IdentityUser user) =>
-        new(user.Id, user.Email!, await userManager.GetRolesAsync(user));
+    private async Task<AuthenticatedUserResponse> CreateUserResponseAsync(ApplicationUser user)
+    {
+        var roles = await userManager.GetRolesAsync(user);
+        if (roles.Count != 1)
+        {
+            throw new InvalidOperationException("The account must have exactly one role.");
+        }
 
-    private static IDictionary<string, string[]> ToSafeValidationErrors(IdentityResult result)
+        return new AuthenticatedUserResponse(
+            user.Id,
+            user.UserName!,
+            user.Email!,
+            roles[0],
+            user.MustChangePassword);
+    }
+
+    internal static IDictionary<string, string[]> ToSafeValidationErrors(IdentityResult result)
     {
         var errors = new Dictionary<string, List<string>>(StringComparer.Ordinal);
 
@@ -129,22 +149,17 @@ public sealed class AuthController(
         {
             var (field, message) = error.Code switch
             {
-                "DuplicateEmail" or "DuplicateUserName" =>
-                    ("email", "An account with this email already exists."),
-                "InvalidEmail" =>
-                    ("email", "Enter a valid email address."),
-                "PasswordTooShort" =>
-                    ("password", "The password does not meet the minimum length requirement."),
-                "PasswordRequiresDigit" =>
-                    ("password", "The password must contain a number."),
-                "PasswordRequiresLower" =>
-                    ("password", "The password must contain a lowercase letter."),
-                "PasswordRequiresUpper" =>
-                    ("password", "The password must contain an uppercase letter."),
-                "PasswordRequiresNonAlphanumeric" =>
-                    ("password", "The password must contain a symbol."),
-                _ =>
-                    ("account", "The account details are not valid.")
+                "DuplicateEmail" => ("email", "An account with this email already exists."),
+                "DuplicateUserName" => ("username", "An account with this username already exists."),
+                "InvalidEmail" => ("email", "Enter a valid email address."),
+                "InvalidUserName" => ("username", "Use 3–50 letters, numbers, dots, underscores or hyphens."),
+                "PasswordMismatch" => ("currentPassword", "The current password is incorrect."),
+                "PasswordTooShort" => ("newPassword", "The password must be at least 8 characters."),
+                "PasswordRequiresDigit" => ("newPassword", "The password must contain a number."),
+                "PasswordRequiresLower" => ("newPassword", "The password must contain a lowercase letter."),
+                "PasswordRequiresUpper" => ("newPassword", "The password must contain an uppercase letter."),
+                "PasswordRequiresNonAlphanumeric" => ("newPassword", "The password must contain a symbol."),
+                _ => ("account", "The account details are not valid.")
             };
 
             if (!errors.TryGetValue(field, out var messages))
@@ -163,32 +178,31 @@ public sealed class AuthController(
     }
 }
 
-/// <summary>Credentials and account details for creating an account.</summary>
-public sealed record SignUpRequest
-{
-    /// <summary>The account email address.</summary>
-    [Required, EmailAddress, StringLength(256)]
-    public required string Email { get; init; }
-
-    /// <summary>The account password.</summary>
-    [Required, StringLength(256, MinimumLength = 1)]
-    public required string Password { get; init; }
-}
-
-/// <summary>Credentials for signing in to an account.</summary>
 public sealed record SignInRequest
 {
-    /// <summary>The account email address.</summary>
-    [Required, EmailAddress, StringLength(256)]
-    public required string Email { get; init; }
+    [Required, StringLength(256)]
+    public required string Identifier { get; init; }
 
-    /// <summary>The account password.</summary>
     [Required, StringLength(256, MinimumLength = 1)]
     public required string Password { get; init; }
 }
 
-/// <summary>Indicates whether the application has any registered users.</summary>
-public sealed record SetupStatusResponse(bool HasUsers);
+public sealed record ChangePasswordRequest
+{
+    [Required, StringLength(256, MinimumLength = 1)]
+    public required string CurrentPassword { get; init; }
 
-/// <summary>Describes the authenticated account without exposing credentials.</summary>
-public sealed record AuthenticatedUserResponse(string Id, string Email, IList<string> Roles);
+    [Required, StringLength(256, MinimumLength = 8)]
+    public required string NewPassword { get; init; }
+}
+
+public sealed record SessionResponse(
+    AuthenticatedUserResponse? User,
+    bool SetupRequired);
+
+public sealed record AuthenticatedUserResponse(
+    string Id,
+    string Username,
+    string Email,
+    string Role,
+    bool MustChangePassword);

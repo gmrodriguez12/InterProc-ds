@@ -18,7 +18,10 @@ cp .env.example .env
 openssl rand -hex 32
 ```
 
-Set the generated value as `POSTGRES_PASSWORD` in `.env`. Do not commit `.env`; credentials are read by Compose and are not stored in the repository.
+Set the generated value as `POSTGRES_PASSWORD` in `.env`. Also replace the three
+`BOOTSTRAP_ADMIN_*` placeholders with the initial administrator's username, email,
+and a strong temporary password. Do not commit `.env`; credentials are read by
+Compose and are not stored in the repository.
 
 ## Development
 
@@ -39,6 +42,26 @@ docker compose -f compose.yaml -f compose.dev.yaml logs -f
 # Stop services without deleting volumes or PostgreSQL data
 docker compose -f compose.yaml -f compose.dev.yaml down
 ```
+
+### Create the first administrator
+
+There is no public signup. Once PostgreSQL is running, provision the first
+administrator with the one-off Identity command:
+
+```bash
+docker compose --profile tools run --rm bootstrap-admin
+```
+
+The command reads `BOOTSTRAP_ADMIN_USERNAME`, `BOOTSTRAP_ADMIN_EMAIL`, and
+`BOOTSTRAP_ADMIN_PASSWORD` from `.env` through the dedicated Compose service. It
+creates the `admin` and `usuario` roles and the initial administrator, and is safe
+to run again when that same active administrator already exists. It stops with an
+error on username/email collisions and never overwrites an existing password or
+role. The administrator must replace the temporary password at first login.
+
+After a successful run, remove `BOOTSTRAP_ADMIN_PASSWORD` from `.env` or replace
+it with an empty value. The long-running API service does not receive bootstrap
+credentials.
 
 ### macOS hot-reload troubleshooting
 
@@ -78,7 +101,12 @@ Do not use `docker compose down -v` unless you intend to delete the database and
 
 ## Environment configuration
 
-Compose reads `POSTGRES_DB`, `POSTGRES_USER`, and `POSTGRES_PASSWORD` from the root `.env` file. Start from `.env.example`, replace the placeholder password with a generated secret, and keep `.env` out of version control. The API receives the database connection through the internal Compose network; database credentials are not published as ports or committed to source.
+Compose reads PostgreSQL and bootstrap values from the root `.env` file. Start
+from `.env.example`, replace every placeholder, and keep `.env` out of version
+control. Only the one-off `bootstrap-admin` service receives the bootstrap
+values. The long-running API receives only its database connection through the
+internal Compose network; credentials are not published as ports or committed to
+source.
 
 PostgreSQL uses these values only when its data directory is first initialized. Editing `.env` later does not change the password of an existing database volume. Back up the data and update the database role deliberately before changing the configured credential; do not delete the volume to rotate a password.
 
@@ -115,17 +143,23 @@ In development, verify the reverse proxy and API health:
 ```bash
 curl -i http://localhost:8080/login
 curl -i http://localhost:8080/api/health
-curl -i http://localhost:8080/api/auth/setup-status
+curl -i http://localhost:8080/api/auth/session
 ```
 
-For an authentication smoke test, use the browser at `http://localhost:8080`: create the first account, refresh the dashboard, sign out, sign in again, and verify that a later account receives the User role. Confirm that opening `/dashboard` while signed out redirects to `/login`. A state-changing request without a CSRF token should return HTTP 400.
+For an authentication smoke test, run `bootstrap-admin`, then use the browser at
+`http://localhost:8080`: sign in with the initial username or email, replace the
+temporary password, open **Accounts**, and create a `usuario` account. Verify that
+the new user must replace its temporary password, receives HTTP 403 for account
+administration, and loses its session after an administrator deactivates it.
+Confirm that `/dashboard` redirects to `/login` while signed out. A state-changing
+request without a CSRF token must return HTTP 400.
 
 Verify persistence without deleting data by restarting PostgreSQL and checking the health endpoint and setup status again:
 
 ```bash
 docker compose -f compose.yaml -f compose.dev.yaml restart db
 curl -i http://localhost:8080/api/health
-curl -i http://localhost:8080/api/auth/setup-status
+curl -i http://localhost:8080/api/auth/session
 ```
 
 Build both application targets using container-provided toolchains:
@@ -133,6 +167,7 @@ Build both application targets using container-provided toolchains:
 ```bash
 docker compose -f compose.yaml -f compose.dev.yaml exec frontend npm run build
 docker compose -f compose.yaml -f compose.dev.yaml exec api dotnet build InterProc.Api/InterProc.Api.csproj --no-restore
+dotnet test backend/tests/InterProc.Api.Tests/InterProc.Api.Tests.csproj
 docker compose build
 ```
 
@@ -141,6 +176,6 @@ The production browser smoke test must use the public HTTPS address behind the T
 ## Application
 
 - `frontend/interproc-web` is a standalone Angular application with strict TypeScript, Router, HttpClient, and reactive forms.
-- `/login`, `/signup`, and `/dashboard` integrate with the cookie-based auth API. The frontend uses the CSRF cookie/header and stores no authentication tokens in browser storage.
+- `/login`, `/change-password`, `/dashboard`, and the admin-only `/accounts` route integrate with the cookie-based auth API. There is no public signup. The frontend uses the CSRF cookie/header and stores no authentication tokens in browser storage.
 - The backend is a single ASP.NET Core Web API project in `backend/InterProc.Api`.
 - Authenticated sessions are protected by ASP.NET Core Identity and PostgreSQL. Data Protection keys persist across container restarts.

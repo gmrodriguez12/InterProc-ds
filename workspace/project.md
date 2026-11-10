@@ -33,10 +33,11 @@ Development requirements:
 
 Initial requirements:
 - Authentication using ASP.NET Core Identity.
-- Login and signup.
-- Redirect to signup when no users exist.
-- New users are approved immediately.
-- Email approval is not required.
+- Login with username or email and password.
+- No public signup; administrators create internal accounts.
+- The initial administrator is provisioned by an idempotent .NET/Identity command.
+- New accounts use a temporary password that must be changed at first login.
+- Accounts can be activated and deactivated; email approval is not required.
 
 ## Architecture
 

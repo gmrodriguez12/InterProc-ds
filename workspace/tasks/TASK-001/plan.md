@@ -8,8 +8,8 @@ Entregar InterProc por incrementos funcionales, primero resolviendo decisiones c
 
 | Fase | Prioridad | Alcance | RF | Salida y condición para avanzar |
 |---|---|---|---|---|
-| 0. Decisiones y fundaciones | P0 | Acordar usuarios/roles, mecanismo de bootstrap del administrador, auditoría, archivo, estados, versionado y convenciones de datos/códigos. | RF-02–04 y reglas transversales | Roles y reglas documentados; mecanismo del primer admin definido; modelo base y contratos de autorización/auditoría definidos. |
-| 1. Acceso y shell de aplicación | P0 | Login por usuario/email, comando de inicialización .NET que crea el primer admin con Identity usando variables de entorno, gestión administrativa de cuentas, logout/contexto de sesión, autorización y estructura de navegación autenticada. | RF-01–04, RF-06 (estructura) | Acceso administrativo funciona; sin alta pública; primer admin `gonza@gmrodriguez.com` provisionado sin insertar directamente en SQL; acciones auditables según política acordada. |
+| 0. Decisiones y fundaciones | P0 | Acordar usuarios/roles, mecanismo de bootstrap del administrador, archivo, estados, versionado y convenciones de datos/códigos. La auditoría funcional queda fuera de v1. | RF-02, RF-04 y reglas transversales | Roles y reglas documentados; mecanismo del primer admin definido; modelo base y contratos de autorización definidos. |
+| 1. Acceso y shell de aplicación | P0 | Login por nombre de usuario o email (distintos y únicos), comando de inicialización .NET que crea el primer admin con Identity usando variables de entorno, gestión administrativa de cuentas, logout/contexto de sesión, autorización y estructura de navegación autenticada. | RF-01, RF-02, RF-04, RF-06 (estructura); RF-03 diferido | Acceso administrativo funciona; sin alta pública; primer admin `gonza@gmrodriguez.com` provisionado sin insertar directamente en SQL; rol y datos de sesión visibles. |
 | 2. Tipos y catálogo de procedimientos | P0 | CRUD de tipos y procedimientos, detalle/esquema, archivado, versiones e historial; única excepción de borrado físico para versiones no vigentes. | RF-13–22 | Catálogo usable y reglas de versionado/archivo verificables; base reutilizable para procesos y trabajos. |
 | 3. Clientes | P0 | Listado/búsqueda local, ficha y edición, notas, trabajos asociados y archivado condicionado. Puede crearse antes la entidad mínima de trabajo requerida para asociaciones/contadores. | RF-23–29 | Clientes vinculables a trabajos y reglas para no archivar con trabajos abiertos. |
 | 4. Procesos y costos | P1 | Plantillas ordenadas desde procedimientos, tiempos/cantidades, datos facturables, costos y cálculos, archivado y conversión a trabajo borrador. | RF-30–37 | Proceso reutilizable genera un trabajo con procedimientos en borrador; cálculos validados con reglas monetarias acordadas. |
@@ -31,7 +31,7 @@ Para cada fase aprobada: especificar criterios de aceptación y reglas pendiente
 
 1. Aprobar o ajustar el orden y el alcance MVP de las fases.
 2. Aplicar RF-02 según aclaración del Product Owner: no existe registro público; solo `admin` puede crear cuentas y asignarles `usuario` o `admin`. Provisionar `gonza@gmrodriguez.com` como primer admin con un comando .NET que use Identity y variables de entorno. La contraseña debe mantenerse fuera del repositorio y proveerse al comando como secreto de entorno.
-3. Confirmar roles/permisos y eventos auditados.
+3. Roles/permisos confirmados: `admin` administra cuentas y accede a toda la aplicación; `usuario` opera los módulos sin administrar cuentas. RF-03 queda fuera de v1 y RF-04 no mostrará la etiqueta "auditada".
 4. Confirmar política de snapshots/versiones de procedimientos usados en trabajos.
 5. Definir estados activos/abiertos, transiciones y reglas de avance.
 6. Confirmar política financiera y de datos personales; solicitar revisión legal/compliance antes de cerrar esos requisitos.

@@ -4,17 +4,25 @@ import { firstValueFrom, Observable, tap } from 'rxjs';
 
 export interface AuthUser {
   id: string;
+  username: string;
   email: string;
-  roles: string[];
+  role: 'admin' | 'usuario';
+  mustChangePassword: boolean;
 }
 
-export interface SetupStatus {
-  hasUsers: boolean;
+export interface SessionResponse {
+  user: AuthUser | null;
+  setupRequired: boolean;
 }
 
 export interface Credentials {
-  email: string;
+  identifier: string;
   password: string;
+}
+
+export interface ChangePasswordCredentials {
+  currentPassword: string;
+  newPassword: string;
 }
 
 export type AuthValidationErrors = Record<string, string[]>;
@@ -25,8 +33,9 @@ export class AuthService {
   private initializationPromise: Promise<void> | null = null;
 
   readonly currentUser = signal<AuthUser | null>(null);
-  readonly setupStatus = signal<SetupStatus | null>(null);
+  readonly setupRequired = signal(false);
   readonly isAuthenticated = computed(() => this.currentUser() !== null);
+  readonly isAdmin = computed(() => this.currentUser()?.role === 'admin');
   readonly initializationError = signal<string | null>(null);
 
   initialize(): Promise<void> {
@@ -50,15 +59,10 @@ export class AuthService {
       .pipe(tap((user) => this.currentUser.set(user)));
   }
 
-  signup(credentials: Credentials): Observable<AuthUser> {
+  changePassword(credentials: ChangePasswordCredentials): Observable<AuthUser> {
     return this.http
-      .post<AuthUser>('/api/auth/signup', credentials, { withCredentials: true })
-      .pipe(
-        tap((user) => {
-          this.currentUser.set(user);
-          this.setupStatus.set({ hasUsers: true });
-        }),
-      );
+      .post<AuthUser>('/api/auth/change-password', credentials, { withCredentials: true })
+      .pipe(tap((user) => this.currentUser.set(user)));
   }
 
   logout(): Observable<void> {
@@ -82,7 +86,7 @@ export class AuthService {
         const messages = Array.isArray(value)
           ? value.filter((message): message is string => typeof message === 'string')
           : [];
-        return messages.length > 0 ? [[key.toLowerCase(), messages]] : [];
+        return messages.length > 0 ? [[lowerFirst(key), messages]] : [];
       }),
     );
   }
@@ -90,7 +94,7 @@ export class AuthService {
   getErrorMessage(error: unknown, fallback: string): string {
     if (error instanceof HttpErrorResponse) {
       if (error.status === 401) {
-        return 'The email or password is incorrect.';
+        return 'The username/email or password is incorrect.';
       }
 
       if (isRecord(error.error)) {
@@ -118,33 +122,19 @@ export class AuthService {
 
   private async restoreSession(): Promise<void> {
     try {
-      const status = await firstValueFrom(
-        this.http.get<SetupStatus>('/api/auth/setup-status', { withCredentials: true }),
+      const session = await firstValueFrom(
+        this.http.get<SessionResponse>('/api/auth/session', { withCredentials: true }),
       );
-      this.setupStatus.set(status);
-
-      if (!status.hasUsers) {
-        this.currentUser.set(null);
+      this.currentUser.set(session.user);
+      this.setupRequired.set(session.setupRequired);
+      this.initializationError.set(null);
+    } catch (error: unknown) {
+      this.currentUser.set(null);
+      this.setupRequired.set(false);
+      if (error instanceof HttpErrorResponse && error.status === 401) {
         this.initializationError.set(null);
         return;
       }
-
-      try {
-        const user = await firstValueFrom(
-          this.http.get<AuthUser>('/api/auth/me', { withCredentials: true }),
-        );
-        this.currentUser.set(user);
-      } catch (error: unknown) {
-        if (!(error instanceof HttpErrorResponse) || error.status !== 401) {
-          throw error;
-        }
-        this.currentUser.set(null);
-      }
-
-      this.initializationError.set(null);
-    } catch {
-      this.setupStatus.set(null);
-      this.currentUser.set(null);
       this.initializationError.set(
         'InterProc could not connect to the service. Check your connection and try again.',
       );
@@ -154,4 +144,8 @@ export class AuthService {
 
 function isRecord(value: unknown): value is Record<string, unknown> {
   return typeof value === 'object' && value !== null;
+}
+
+function lowerFirst(value: string): string {
+  return value.length === 0 ? value : value.charAt(0).toLowerCase() + value.slice(1);
 }

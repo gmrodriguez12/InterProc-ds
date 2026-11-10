@@ -19,19 +19,29 @@ import { AuthService } from './services/auth.service';
         <nav class="main-nav" aria-label="Main navigation">
           @if (auth.isAuthenticated()) {
             <a routerLink="/dashboard" routerLinkActive="active" ariaCurrentWhenActive="page">Dashboard</a>
+            @if (auth.isAdmin() && !auth.currentUser()?.mustChangePassword) {
+              <a routerLink="/accounts" routerLinkActive="active" ariaCurrentWhenActive="page">Accounts</a>
+            }
             <button class="nav-button" type="button" (click)="logout()" [disabled]="isLoggingOut">
               {{ isLoggingOut ? 'Signing out…' : 'Sign out' }}
             </button>
           } @else {
             <a routerLink="/login" routerLinkActive="active" ariaCurrentWhenActive="page">Sign in</a>
-            <a routerLink="/signup" routerLinkActive="active" ariaCurrentWhenActive="page">Create account</a>
           }
         </nav>
 
-        <span class="workspace-label">
-          <span class="status-dot" aria-hidden="true"></span>
-          Workspace
-        </span>
+        @if (auth.currentUser(); as user) {
+          <span class="workspace-label session-identity">
+            <span class="status-dot" aria-hidden="true"></span>
+            <span>{{ user.username }}</span>
+            <span class="role-label">{{ user.role }}</span>
+          </span>
+        } @else {
+          <span class="workspace-label">
+            <span class="status-dot" aria-hidden="true"></span>
+            Workspace
+          </span>
+        }
       </header>
 
       <main class="page-content">
@@ -77,10 +87,8 @@ export class AppComponent {
     if (!this.auth.initializationError()) {
       await this.router.navigateByUrl(
         this.auth.isAuthenticated()
-          ? '/dashboard'
-          : this.auth.setupStatus()?.hasUsers === false
-            ? '/signup'
-            : '/login',
+          ? (this.auth.currentUser()?.mustChangePassword ? '/change-password' : '/dashboard')
+          : '/login',
       );
     }
   }
