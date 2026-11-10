@@ -5,23 +5,13 @@
 GET {{InterProc.Api_HostAddress}}/api/auth/setup-status
 Accept: application/json
 
-### Register and sign in the first user (Admin)
-POST {{InterProc.Api_HostAddress}}/api/auth/signup
-Content-Type: application/json
-X-XSRF-TOKEN: {{csrfToken}}
-
-{
-  "email": "admin@example.com",
-  "password": "ChangeMe123!"
-}
-
 ### Sign in
 POST {{InterProc.Api_HostAddress}}/api/auth/login
 Content-Type: application/json
 X-XSRF-TOKEN: {{csrfToken}}
 
 {
-  "email": "admin@example.com",
+  "identifier": "gonza",
   "password": "ChangeMe123!"
 }
 

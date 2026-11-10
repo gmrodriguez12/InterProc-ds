@@ -1,6 +1,6 @@
 import { Component, inject } from '@angular/core';
 import { FormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
-import { Router, RouterLink } from '@angular/router';
+import { Router } from '@angular/router';
 import { firstValueFrom } from 'rxjs';
 
 import { AuthService, AuthValidationErrors } from '../services/auth.service';
@@ -8,7 +8,7 @@ import { AuthService, AuthValidationErrors } from '../services/auth.service';
 @Component({
   selector: 'app-login',
   standalone: true,
-  imports: [ReactiveFormsModule, RouterLink],
+  imports: [ReactiveFormsModule],
   template: `
     <section class="auth-layout">
       <div class="auth-copy">
@@ -37,13 +37,13 @@ import { AuthService, AuthValidationErrors } from '../services/auth.service';
         }
 
         <form [formGroup]="form" (ngSubmit)="onSubmit()" novalidate>
-          <label for="login-email">Email address</label>
-          <input id="login-email" type="email" formControlName="email" autocomplete="email"
-            placeholder="you@company.com" [attr.aria-invalid]="emailHasError">
-          @if (form.controls.email.touched && form.controls.email.invalid) {
-            <span class="field-error">Enter a valid email address.</span>
+          <label for="login-identifier">Username or email</label>
+          <input id="login-identifier" type="text" formControlName="identifier" autocomplete="username"
+            placeholder="username or you@company.com" [attr.aria-invalid]="identifierHasError">
+          @if (form.controls.identifier.touched && form.controls.identifier.invalid) {
+            <span class="field-error">Enter your username or email.</span>
           }
-          @for (message of apiErrors['email'] ?? []; track message) {
+          @for (message of apiErrors['identifier'] ?? []; track message) {
             <span class="field-error">{{ message }}</span>
           }
 
@@ -62,8 +62,7 @@ import { AuthService, AuthValidationErrors } from '../services/auth.service';
             {{ isSubmitting ? 'Signing in…' : 'Continue' }} <span aria-hidden="true">→</span>
           </button>
         </form>
-
-        <p class="form-switch">New to InterProc? <a routerLink="/signup">Create an account</a></p>
+        <p class="form-switch">Accounts are created by an administrator.</p>
       </div>
     </section>
   `,
@@ -78,12 +77,12 @@ export class LoginComponent {
   apiErrors: AuthValidationErrors = {};
 
   readonly form = this.formBuilder.nonNullable.group({
-    email: ['', [Validators.required, Validators.email]],
+    identifier: ['', Validators.required],
     password: ['', Validators.required],
   });
 
-  get emailHasError(): boolean {
-    return this.form.controls.email.invalid || (this.apiErrors['email']?.length ?? 0) > 0;
+  get identifierHasError(): boolean {
+    return this.form.controls.identifier.invalid || (this.apiErrors['identifier']?.length ?? 0) > 0;
   }
 
   get passwordHasError(): boolean {
@@ -101,7 +100,9 @@ export class LoginComponent {
     this.isSubmitting = true;
     try {
       await firstValueFrom(this.auth.login(this.form.getRawValue()));
-      await this.router.navigateByUrl('/dashboard');
+      await this.router.navigateByUrl(
+        this.auth.currentUser()?.mustChangePassword ? '/change-password' : '/dashboard',
+      );
     } catch (error: unknown) {
       this.apiErrors = this.auth.getValidationErrors(error);
       this.errorMessage = this.auth.getErrorMessage(

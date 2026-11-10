@@ -3,7 +3,7 @@
 
 ## Status
 
-Proposed — pendiente de aprobación del Product Owner (TASK-001).
+Approved — orden y alcance de las fases 0–3 aprobados por el Product Owner el 2026-11-10 (TASK-001).
 
 ## Product Objective
 
@@ -17,10 +17,10 @@ Base de acceso administrativo y auditoría, catálogo de tipos/procedimientos co
 
 | Phase | Objective | Features | Dependencies | Status |
 |---|---|---|---|---|
-| 0. Decisiones y fundaciones | Resolver reglas transversales, modelo de datos común y autorización. | RF-02–04; auditoría; roles; archivado; estados; versionado | Aprobación de roadmap y decisiones pendientes | Proposed |
-| 1. Acceso y estructura de aplicación | Habilitar acceso seguro, administración de cuentas y navegación autenticada. | RF-01–04, RF-06 (estructura inicial) | Fase 0 | Proposed |
-| 2. Catálogo | Crear tipos y procedimientos, con detalle, historial, versionado y archivo. | RF-13–22 | Fase 1; decisiones de versiones y auditoría | Proposed |
-| 3. Clientes | Gestionar clientes, notas, asociación/listado de trabajos y restricciones de archivo. | RF-23–29 | Fase 1; entidades de trabajo mínimas para contadores y asociación | Proposed |
+| 0. Decisiones y fundaciones | Resolver reglas transversales, modelo de datos común y autorización. | RF-02–04; auditoría; roles; archivado; estados; versionado | Decisiones aprobadas | Approved |
+| 1. Acceso y estructura de aplicación | Habilitar acceso seguro, administración de cuentas y navegación autenticada. | RF-01–04, RF-06 (estructura inicial) | Fase 0 | Approved |
+| 2. Catálogo | Crear tipos y procedimientos, con detalle, historial, versionado y archivo. | RF-13–22 | Fase 1 | Approved |
+| 3. Clientes | Gestionar clientes, notas, asociación/listado de trabajos y restricciones de archivo. | RF-23–29 | Fase 1; entidad mínima de trabajo | Approved |
 | 4. Procesos | Crear plantillas ordenadas, costos y conversión a trabajo borrador. | RF-30–37 | Fase 2; decisiones financieras | Proposed |
 | 5. Trabajos | Completar armado, ejecución, avance e historial. | RF-38–47 | Fases 2–4; versión de procedimiento fijada por trabajo | Proposed |
 | 6. Dashboard | Exponer tablero Kanban, tarjetas, indicadores y preferencias. | RF-07–12 | Fases 3–5; reglas de estados/activos | Proposed |
@@ -36,12 +36,12 @@ Fase 0: resolver decisiones de producto y actualizar el modelo de acceso antes d
 
 ## Pending Decisions
 
-Ver `workspace/product/requirements.md` y `workspace/tasks/TASK-001/analysis.md`. RF-02 quedó aclarado: solo `admin` crea cuentas y les asigna el rol `usuario` o `admin`; no hay registro público. El primer `admin` se provisiona mediante un comando .NET que usa Identity y variables de entorno; no se insertará directamente con SQL. Quedan por definir el alcance de auditoría, las políticas de versión y los estados.
+Las decisiones necesarias para las fases 0–3 están cerradas. Continúan pendientes las reglas financieras y otros detalles propios de las fases 4–7.
 
 ## Roadmap Changes
 
-Record significant changes to priorities,
-scope or implementation order.
+- 2026-11-10: aprobadas las fases 0–3 y sus decisiones transversales.
+- 2026-11-10: fase 3 incluirá una entidad mínima de trabajo para asociaciones, contadores y restricciones de archivo.
 
 ## Rules
 

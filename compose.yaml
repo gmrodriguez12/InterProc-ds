@@ -46,6 +46,10 @@ services:
       ASPNETCORE_ENVIRONMENT: Production
       ConnectionStrings__DefaultConnection: Host=db;Port=5432;Database=${POSTGRES_DB:?Set POSTGRES_DB in .env};Username=${POSTGRES_USER:?Set POSTGRES_USER in .env};Password=${POSTGRES_PASSWORD:?Set POSTGRES_PASSWORD in .env}
       DataProtection__KeysPath: /var/lib/interproc/keys
+      INTERPROC_ADMIN_DISPLAY_NAME: ${INTERPROC_ADMIN_DISPLAY_NAME:-}
+      INTERPROC_ADMIN_USERNAME: ${INTERPROC_ADMIN_USERNAME:-}
+      INTERPROC_ADMIN_EMAIL: ${INTERPROC_ADMIN_EMAIL:-}
+      INTERPROC_ADMIN_PASSWORD: ${INTERPROC_ADMIN_PASSWORD:-}
     volumes:
       - data_protection_keys:/var/lib/interproc/keys
     depends_on:

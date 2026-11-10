@@ -2,8 +2,11 @@ import { Routes } from '@angular/router';
 
 import { DashboardComponent } from './pages/dashboard.component';
 import { LoginComponent } from './pages/login.component';
-import { SignupComponent } from './pages/signup.component';
+import { ChangePasswordComponent } from './pages/change-password.component';
+import { UsersComponent } from './pages/users.component';
+import { AuditComponent } from './pages/audit.component';
 import {
+  adminGuard,
   anonymousGuard,
   authenticatedGuard,
   startupRedirectGuard,
@@ -17,17 +20,14 @@ export const routes: Routes = [
     canActivate: [anonymousGuard],
     title: 'Sign in · InterProc',
   },
-  {
-    path: 'signup',
-    component: SignupComponent,
-    canActivate: [anonymousGuard],
-    title: 'Create account · InterProc',
-  },
+  { path: 'change-password', component: ChangePasswordComponent, canActivate: [authenticatedGuard], title: 'Change password · InterProc' },
   {
     path: 'dashboard',
     component: DashboardComponent,
     canActivate: [authenticatedGuard],
     title: 'Dashboard · InterProc',
   },
+  { path: 'admin/users', component: UsersComponent, canActivate: [adminGuard], title: 'Accounts · InterProc' },
+  { path: 'admin/audit', component: AuditComponent, canActivate: [adminGuard], title: 'Audit · InterProc' },
   { path: '**', canActivate: [startupRedirectGuard], component: LoginComponent },
 ];

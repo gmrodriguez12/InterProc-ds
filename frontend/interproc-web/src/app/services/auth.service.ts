@@ -4,8 +4,12 @@ import { firstValueFrom, Observable, tap } from 'rxjs';
 
 export interface AuthUser {
   id: string;
+  displayName: string;
+  username: string;
   email: string;
   roles: string[];
+  mustChangePassword: boolean;
+  isActive: boolean;
 }
 
 export interface SetupStatus {
@@ -13,8 +17,13 @@ export interface SetupStatus {
 }
 
 export interface Credentials {
-  email: string;
+  identifier: string;
   password: string;
+}
+
+export interface PasswordChange {
+  currentPassword: string;
+  newPassword: string;
 }
 
 export type AuthValidationErrors = Record<string, string[]>;
@@ -27,6 +36,7 @@ export class AuthService {
   readonly currentUser = signal<AuthUser | null>(null);
   readonly setupStatus = signal<SetupStatus | null>(null);
   readonly isAuthenticated = computed(() => this.currentUser() !== null);
+  readonly isAdmin = computed(() => this.currentUser()?.roles.includes('admin') ?? false);
   readonly initializationError = signal<string | null>(null);
 
   initialize(): Promise<void> {
@@ -50,15 +60,10 @@ export class AuthService {
       .pipe(tap((user) => this.currentUser.set(user)));
   }
 
-  signup(credentials: Credentials): Observable<AuthUser> {
+  changePassword(passwords: PasswordChange): Observable<AuthUser> {
     return this.http
-      .post<AuthUser>('/api/auth/signup', credentials, { withCredentials: true })
-      .pipe(
-        tap((user) => {
-          this.currentUser.set(user);
-          this.setupStatus.set({ hasUsers: true });
-        }),
-      );
+      .post<AuthUser>('/api/auth/change-password', passwords, { withCredentials: true })
+      .pipe(tap((user) => this.currentUser.set(user)));
   }
 
   logout(): Observable<void> {
@@ -90,7 +95,7 @@ export class AuthService {
   getErrorMessage(error: unknown, fallback: string): string {
     if (error instanceof HttpErrorResponse) {
       if (error.status === 401) {
-        return 'The email or password is incorrect.';
+        return 'The username, email, or password is incorrect.';
       }
 
       if (isRecord(error.error)) {

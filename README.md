@@ -18,7 +18,16 @@ cp .env.example .env
 openssl rand -hex 32
 ```
 
-Set the generated value as `POSTGRES_PASSWORD` in `.env`. Do not commit `.env`; credentials are read by Compose and are not stored in the repository.
+Set the generated value as `POSTGRES_PASSWORD` in `.env`. Set a temporary `INTERPROC_ADMIN_PASSWORD` that meets the Identity password policy. Do not commit `.env`; credentials are read by Compose and are not stored in the repository.
+
+Provision the first administrator once the database is running. The command refuses to run if an account already exists:
+
+```bash
+docker compose -f compose.yaml -f compose.dev.yaml run --rm api \
+  dotnet run --project InterProc.Api/InterProc.Api.csproj -- bootstrap-admin
+```
+
+Remove `INTERPROC_ADMIN_PASSWORD` from `.env` after provisioning. The administrator must replace the temporary password on first sign-in.
 
 ## Development
 
@@ -118,7 +127,7 @@ curl -i http://localhost:8080/api/health
 curl -i http://localhost:8080/api/auth/setup-status
 ```
 
-For an authentication smoke test, use the browser at `http://localhost:8080`: create the first account, refresh the dashboard, sign out, sign in again, and verify that a later account receives the User role. Confirm that opening `/dashboard` while signed out redirects to `/login`. A state-changing request without a CSRF token should return HTTP 400.
+For an authentication smoke test, provision the first administrator with the command above and use the browser at `http://localhost:8080`: sign in with username or email, replace the temporary password, create another account from Administration, sign out, and sign in with the new account. Confirm that opening `/dashboard` while signed out redirects to `/login`, that a regular user cannot open `/admin/users`, and that a state-changing request without a CSRF token returns HTTP 400.
 
 Verify persistence without deleting data by restarting PostgreSQL and checking the health endpoint and setup status again:
 
@@ -141,6 +150,6 @@ The production browser smoke test must use the public HTTPS address behind the T
 ## Application
 
 - `frontend/interproc-web` is a standalone Angular application with strict TypeScript, Router, HttpClient, and reactive forms.
-- `/login`, `/signup`, and `/dashboard` integrate with the cookie-based auth API. The frontend uses the CSRF cookie/header and stores no authentication tokens in browser storage.
+- `/login`, `/change-password`, `/dashboard`, `/admin/users`, and `/admin/audit` integrate with the cookie-based auth API. There is no public signup route. The frontend uses the CSRF cookie/header and stores no authentication tokens in browser storage.
 - The backend is a single ASP.NET Core Web API project in `backend/InterProc.Api`.
 - Authenticated sessions are protected by ASP.NET Core Identity and PostgreSQL. Data Protection keys persist across container restarts.

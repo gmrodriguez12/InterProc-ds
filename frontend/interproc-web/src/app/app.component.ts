@@ -19,6 +19,10 @@ import { AuthService } from './services/auth.service';
         <nav class="main-nav" aria-label="Main navigation">
           @if (auth.isAuthenticated()) {
             <a routerLink="/dashboard" routerLinkActive="active" ariaCurrentWhenActive="page">Dashboard</a>
+            @if (auth.isAdmin()) {
+              <a routerLink="/admin/users" routerLinkActive="active" ariaCurrentWhenActive="page">Accounts</a>
+              <a routerLink="/admin/audit" routerLinkActive="active" ariaCurrentWhenActive="page">Audit</a>
+            }
             <button class="nav-button" type="button" (click)="logout()" [disabled]="isLoggingOut">
               {{ isLoggingOut ? 'Signing out…' : 'Sign out' }}
             </button>
@@ -28,9 +32,9 @@ import { AuthService } from './services/auth.service';
           }
         </nav>
 
-        <span class="workspace-label">
+        <span class="workspace-label" [title]="auth.currentUser()?.email ?? 'Workspace'">
           <span class="status-dot" aria-hidden="true"></span>
-          Workspace
+          {{ auth.currentUser()?.displayName ?? 'Workspace' }}
         </span>
       </header>
 
@@ -77,10 +81,8 @@ export class AppComponent {
     if (!this.auth.initializationError()) {
       await this.router.navigateByUrl(
         this.auth.isAuthenticated()
-          ? '/dashboard'
-          : this.auth.setupStatus()?.hasUsers === false
-            ? '/signup'
-            : '/login',
+          ? this.auth.currentUser()?.mustChangePassword ? '/change-password' : '/dashboard'
+          : '/login',
       );
     }
   }

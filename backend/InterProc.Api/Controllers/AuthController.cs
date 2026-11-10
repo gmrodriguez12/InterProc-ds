@@ -1,10 +1,12 @@
 using System.ComponentModel.DataAnnotations;
 using System.Security.Claims;
+using InterProc.Api.Domain;
 using InterProc.Api.Services;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Antiforgery;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.EntityFrameworkCore;
 
 namespace InterProc.Api.Controllers;
 
@@ -13,67 +15,55 @@ namespace InterProc.Api.Controllers;
 [AutoValidateAntiforgeryToken]
 public sealed class AuthController(
     IAuthService authService,
-    UserManager<IdentityUser> userManager,
-    SignInManager<IdentityUser> signInManager,
+    UserManager<ApplicationUser> userManager,
+    SignInManager<ApplicationUser> signInManager,
     IAntiforgery antiforgery,
     IWebHostEnvironment environment) : ControllerBase
 {
-    [HttpPost("signup")]
-    [ProducesResponseType<AuthenticatedUserResponse>(StatusCodes.Status201Created)]
-    [ProducesResponseType<ValidationProblemDetails>(StatusCodes.Status400BadRequest)]
-    public async Task<IActionResult> SignUp(
-        SignUpRequest request,
-        CancellationToken cancellationToken)
+    [HttpPost("login")]
+    public async Task<ActionResult<AuthenticatedUserResponse>> Login(SignInRequest request)
     {
-        var (user, result) = await authService.RegisterAsync(
-            request.Email,
-            request.Password,
-            cancellationToken);
+        var user = await authService.FindByIdentifierAsync(request.Identifier);
+        if (user is null || !user.IsActive)
+        {
+            return UnauthorizedProblem();
+        }
 
+        var result = await authService.PasswordSignInAsync(user, request.Password);
+        if (!result.Succeeded)
+        {
+            return UnauthorizedProblem();
+        }
+
+        StoreAntiforgeryToken();
+        return Ok(await CreateUserResponseAsync(user));
+    }
+
+    [Authorize]
+    [HttpPost("change-password")]
+    public async Task<ActionResult<AuthenticatedUserResponse>> ChangePassword(ChangePasswordRequest request)
+    {
+        var user = await userManager.GetUserAsync(User);
+        if (user is null || !user.IsActive)
+        {
+            return Unauthorized();
+        }
+
+        var result = await userManager.ChangePasswordAsync(user, request.CurrentPassword, request.NewPassword);
         if (!result.Succeeded)
         {
             return BadRequest(new ValidationProblemDetails(ToSafeValidationErrors(result)));
         }
 
-        await signInManager.SignInAsync(user!, isPersistent: false);
+        user.MustChangePassword = false;
+        EnsureSuccess(await userManager.UpdateAsync(user));
+        await signInManager.RefreshSignInAsync(user);
         StoreAntiforgeryToken();
-        var response = await CreateUserResponseAsync(user!);
-        return CreatedAtAction(nameof(Me), response);
-    }
-
-    [HttpPost("login")]
-    [ProducesResponseType<AuthenticatedUserResponse>(StatusCodes.Status200OK)]
-    [ProducesResponseType<ProblemDetails>(StatusCodes.Status401Unauthorized)]
-    public async Task<IActionResult> Login(SignInRequest request)
-    {
-        var result = await signInManager.PasswordSignInAsync(
-            request.Email,
-            request.Password,
-            isPersistent: false,
-            lockoutOnFailure: true);
-
-        if (!result.Succeeded)
-        {
-            return Unauthorized(new ProblemDetails
-            {
-                Status = StatusCodes.Status401Unauthorized,
-                Title = "Authentication failed",
-                Detail = "The email or password is incorrect."
-            });
-        }
-
-        StoreAntiforgeryToken();
-        var user = await userManager.FindByEmailAsync(request.Email);
-        if (user is null)
-        {
-            throw new InvalidOperationException("The authenticated account could not be found.");
-        }
-
         return Ok(await CreateUserResponseAsync(user));
     }
 
+    [Authorize]
     [HttpPost("logout")]
-    [ProducesResponseType(StatusCodes.Status204NoContent)]
     public async Task<IActionResult> Logout()
     {
         await signInManager.SignOutAsync();
@@ -84,27 +74,27 @@ public sealed class AuthController(
 
     [Authorize]
     [HttpGet("me")]
-    [ProducesResponseType<AuthenticatedUserResponse>(StatusCodes.Status200OK)]
-    [ProducesResponseType(StatusCodes.Status401Unauthorized)]
-    public async Task<IActionResult> Me()
+    public async Task<ActionResult<AuthenticatedUserResponse>> Me()
     {
         var user = await userManager.GetUserAsync(User);
-        if (user is null)
-        {
-            return Unauthorized();
-        }
-
-        return Ok(await CreateUserResponseAsync(user));
+        return user is null || !user.IsActive
+            ? Unauthorized()
+            : Ok(await CreateUserResponseAsync(user));
     }
 
     [HttpGet("setup-status")]
-    [ProducesResponseType<SetupStatusResponse>(StatusCodes.Status200OK)]
-    public async Task<IActionResult> SetupStatus(CancellationToken cancellationToken)
+    public async Task<ActionResult<SetupStatusResponse>> SetupStatus(CancellationToken cancellationToken)
     {
         StoreAntiforgeryToken();
-
-        return Ok(new SetupStatusResponse(await authService.HasUsersAsync(cancellationToken)));
+        return Ok(new SetupStatusResponse(await userManager.Users.AnyAsync(cancellationToken)));
     }
+
+    private UnauthorizedObjectResult UnauthorizedProblem() => Unauthorized(new ProblemDetails
+    {
+        Status = StatusCodes.Status401Unauthorized,
+        Title = "Authentication failed",
+        Detail = "The username, email, or password is incorrect."
+    });
 
     private void StoreAntiforgeryToken()
     {
@@ -118,77 +108,45 @@ public sealed class AuthController(
         });
     }
 
-    private async Task<AuthenticatedUserResponse> CreateUserResponseAsync(IdentityUser user) =>
-        new(user.Id, user.Email!, await userManager.GetRolesAsync(user));
+    private async Task<AuthenticatedUserResponse> CreateUserResponseAsync(ApplicationUser user) =>
+        new(user.Id, user.DisplayName, user.UserName!, user.Email!,
+            await userManager.GetRolesAsync(user), user.MustChangePassword, user.IsActive);
 
-    private static IDictionary<string, string[]> ToSafeValidationErrors(IdentityResult result)
+    internal static IDictionary<string, string[]> ToSafeValidationErrors(IdentityResult result) =>
+        result.Errors
+            .GroupBy(error => error.Code.StartsWith("Password", StringComparison.Ordinal) ? "password" : "account")
+            .ToDictionary(group => group.Key,
+                group => group.Select(error => error.Description).Distinct(StringComparer.Ordinal).ToArray(),
+                StringComparer.Ordinal);
+
+    private static void EnsureSuccess(IdentityResult result)
     {
-        var errors = new Dictionary<string, List<string>>(StringComparer.Ordinal);
-
-        foreach (var error in result.Errors)
+        if (!result.Succeeded)
         {
-            var (field, message) = error.Code switch
-            {
-                "DuplicateEmail" or "DuplicateUserName" =>
-                    ("email", "An account with this email already exists."),
-                "InvalidEmail" =>
-                    ("email", "Enter a valid email address."),
-                "PasswordTooShort" =>
-                    ("password", "The password does not meet the minimum length requirement."),
-                "PasswordRequiresDigit" =>
-                    ("password", "The password must contain a number."),
-                "PasswordRequiresLower" =>
-                    ("password", "The password must contain a lowercase letter."),
-                "PasswordRequiresUpper" =>
-                    ("password", "The password must contain an uppercase letter."),
-                "PasswordRequiresNonAlphanumeric" =>
-                    ("password", "The password must contain a symbol."),
-                _ =>
-                    ("account", "The account details are not valid.")
-            };
-
-            if (!errors.TryGetValue(field, out var messages))
-            {
-                messages = [];
-                errors.Add(field, messages);
-            }
-
-            messages.Add(message);
+            throw new InvalidOperationException("The account could not be updated.");
         }
-
-        return errors.ToDictionary(
-            pair => pair.Key,
-            pair => pair.Value.Distinct(StringComparer.Ordinal).ToArray(),
-            StringComparer.Ordinal);
     }
 }
 
-/// <summary>Credentials and account details for creating an account.</summary>
-public sealed record SignUpRequest
-{
-    /// <summary>The account email address.</summary>
-    [Required, EmailAddress, StringLength(256)]
-    public required string Email { get; init; }
-
-    /// <summary>The account password.</summary>
-    [Required, StringLength(256, MinimumLength = 1)]
-    public required string Password { get; init; }
-}
-
-/// <summary>Credentials for signing in to an account.</summary>
 public sealed record SignInRequest
 {
-    /// <summary>The account email address.</summary>
-    [Required, EmailAddress, StringLength(256)]
-    public required string Email { get; init; }
-
-    /// <summary>The account password.</summary>
-    [Required, StringLength(256, MinimumLength = 1)]
-    public required string Password { get; init; }
+    [Required, StringLength(256)] public required string Identifier { get; init; }
+    [Required, StringLength(256)] public required string Password { get; init; }
 }
 
-/// <summary>Indicates whether the application has any registered users.</summary>
+public sealed record ChangePasswordRequest
+{
+    [Required, StringLength(256)] public required string CurrentPassword { get; init; }
+    [Required, StringLength(256, MinimumLength = 8)] public required string NewPassword { get; init; }
+}
+
 public sealed record SetupStatusResponse(bool HasUsers);
 
-/// <summary>Describes the authenticated account without exposing credentials.</summary>
-public sealed record AuthenticatedUserResponse(string Id, string Email, IList<string> Roles);
+public sealed record AuthenticatedUserResponse(
+    string Id,
+    string DisplayName,
+    string Username,
+    string Email,
+    IList<string> Roles,
+    bool MustChangePassword,
+    bool IsActive);
