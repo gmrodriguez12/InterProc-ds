@@ -3,6 +3,7 @@
 
 | ID | Title | Type | Priority | Status |
 |----|-------|------|----------|--------|
+| TASK-001 | Plan de implementación de requerimientos funcionales RF-01–RF-50 | Roadmap | High | Proposed |
 
 ## Task numbering
 
