@@ -1,0 +1,8 @@
+/* Motion is short and property-scoped: 150ms for interactive feedback,
+   200ms for surfaces, 300ms for progress fills. No bounce, no spring. */
+:root {
+  --duration-fast: 150ms; /* @kind other */
+  --duration-surface: 200ms; /* @kind other */
+  --duration-slow: 300ms; /* @kind other */
+  --ease-standard: cubic-bezier(0.4, 0, 0.2, 1); /* @kind other */
+}

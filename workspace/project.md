@@ -28,6 +28,7 @@ Todos los servicios de aplicación se ejecutan mediante Docker. El entorno de de
 - Fases 0–1: fundaciones, acceso, cuentas y auditoría mínima.
 - Fase 2: tipos y catálogo versionado de procedimientos.
 - Fase 3: clientes, notas y fundación mínima de trabajos.
+- Interfaz: sistema visual Lumen Dark del template InterProc, UI en español, assets locales y navegación responsive.
 
 El estado verificable y los resultados de validación se mantienen en `workspace/status.md` y `workspace/tasks/`.
 

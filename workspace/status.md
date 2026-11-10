@@ -3,7 +3,7 @@
 
 ## Current phase
 
-Development — Fases 0–3 entregadas
+Development — Fases 0–3 y adaptación visual entregadas
 
 ## Active tasks
 
@@ -19,6 +19,8 @@ None.
 
 ## Recent decisions
 
+- El Product Owner aprobó TASK-003 el 2026-11-10: UI en español, Dashboard sin datos ficticios, navegación futura oculta y sidebar móvil colapsable.
+- TASK-003 adoptó el template Lumen Dark en todas las pantallas existentes; build Docker, assets locales, responsive y 12 pruebas backend quedaron validados el 2026-11-10.
 - RF-02: no hay registro público; solo `admin` crea cuentas y les asigna el rol `usuario` o `admin`. El primer admin (`gonza@gmrodriguez.com`) se provisionará con un comando .NET/Identity y variables de entorno; la contraseña no se almacena en el repositorio. `.env` y `.env.*` están excluidos por `.gitignore` (salvo `.env.example`).
 - El Product Owner aprobó el roadmap y el orden de las fases 0–3 el 2026-11-10.
 - RF-03 se limita a auditar archivados y restauraciones; la auditoría funcional se guarda en PostgreSQL y los logs técnicos se emiten por la salida estándar de Docker.

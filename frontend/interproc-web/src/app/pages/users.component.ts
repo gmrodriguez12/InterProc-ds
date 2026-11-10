@@ -9,33 +9,33 @@ import { ManagedUser, UsersService } from '../services/users.service';
   standalone: true,
   imports: [ReactiveFormsModule],
   template: `
-    <section class="resource-page">
-      <div class="page-heading">
-        <div><p class="eyebrow">ADMINISTRATION</p><h1>Accounts</h1></div>
-        <button class="button button-primary compact-button" type="button" (click)="showCreate = !showCreate">New account</button>
+    <section class="page">
+      <div class="page__head">
+        <div><span class="eyebrow">Administración</span><h1>Cuentas</h1><p>Accesos internos y roles de InterProc.</p></div>
+        <div class="page__actions"><button class="btn btn--primary" type="button" (click)="showCreate = !showCreate"><i class="fa-solid fa-user-plus" aria-hidden="true"></i>Nueva cuenta</button></div>
       </div>
-      @if (message) { <p class="form-alert" role="status">{{ message }}</p> }
+      @if (message) { <div class="alert" role="status"><i class="fa-solid fa-circle-info" aria-hidden="true"></i><p>{{ message }}</p></div> }
       @if (showCreate) {
-        <form class="panel grid-form" [formGroup]="form" (ngSubmit)="create()">
-          <label>Display name<input formControlName="displayName"></label>
-          <label>Username<input formControlName="username" autocomplete="off"></label>
-          <label>Email<input formControlName="email" type="email"></label>
-          <label>Role<select formControlName="role"><option value="usuario">Usuario</option><option value="admin">Admin</option></select></label>
-          <label>Temporary password<input formControlName="temporaryPassword" type="password" autocomplete="new-password"></label>
-          <button class="button button-primary compact-button" type="submit">Create account</button>
+        <form class="card form-grid" [formGroup]="form" (ngSubmit)="create()">
+          <div class="field"><label for="user-display">Nombre visible</label><input id="user-display" formControlName="displayName"></div>
+          <div class="field"><label for="user-name">Usuario</label><input id="user-name" formControlName="username" autocomplete="off"></div>
+          <div class="field"><label for="user-email">Email</label><input id="user-email" formControlName="email" type="email"></div>
+          <div class="field"><label for="user-role">Rol</label><select id="user-role" formControlName="role"><option value="usuario">Usuario</option><option value="admin">Admin</option></select></div>
+          <div class="field span-2"><label for="user-password">Contraseña temporal</label><input id="user-password" formControlName="temporaryPassword" type="password" autocomplete="new-password"><span class="field__hint">La persona deberá cambiarla en su primer ingreso.</span></div>
+          <div class="form-actions"><button class="btn btn--ghost" type="button" (click)="showCreate = false">Cancelar</button><button class="btn btn--primary" type="submit"><i class="fa-solid fa-check" aria-hidden="true"></i>Crear cuenta</button></div>
         </form>
       }
-      <div class="panel table-wrap">
+      <div class="table-wrap">
         <table>
-          <thead><tr><th>Name</th><th>Username</th><th>Email</th><th>Role</th><th>Status</th><th></th></tr></thead>
+          <thead><tr><th>Nombre</th><th>Usuario</th><th>Email</th><th>Rol</th><th>Estado</th><th><span class="sr-only">Acciones</span></th></tr></thead>
           <tbody>
             @for (user of users; track user.id) {
               <tr>
-                <td>{{ user.displayName }}</td><td>{{ user.username }}</td><td>{{ user.email }}</td>
-                <td>{{ user.role }}</td><td>{{ user.isActive ? 'Active' : 'Inactive' }}</td>
-                <td><button class="text-button" type="button" (click)="toggle(user)">{{ user.isActive ? 'Deactivate' : 'Activate' }}</button></td>
+                <td><div class="who"><span class="avatar">{{ user.displayName.charAt(0).toUpperCase() }}</span><span class="who__meta"><strong>{{ user.displayName }}</strong></span></div></td><td class="mono">{{ user.username }}</td><td>{{ user.email }}</td>
+                <td><span class="badge" [class.badge--primary]="user.role === 'admin'">{{ user.role }}</span></td><td><span class="badge" [class.st-terminado]="user.isActive" [class.st-cancelado]="!user.isActive">{{ user.isActive ? 'Activa' : 'Inactiva' }}</span></td>
+                <td><div class="table-actions"><button class="btn btn--sm" type="button" (click)="toggle(user)">{{ user.isActive ? 'Desactivar' : 'Activar' }}</button></div></td>
               </tr>
-            } @empty { <tr><td colspan="6">No accounts found.</td></tr> }
+            } @empty { <tr><td class="table-empty" colspan="6">No hay cuentas.</td></tr> }
           </tbody>
         </table>
       </div>
@@ -64,14 +64,14 @@ export class UsersComponent implements OnInit {
     try {
       await firstValueFrom(this.usersService.create(this.form.getRawValue()));
       this.form.reset({ role: 'usuario', displayName: '', username: '', email: '', temporaryPassword: '' });
-      this.showCreate = false; this.message = 'Account created.'; await this.load();
-    } catch { this.message = 'The account could not be created. Review unique fields and password rules.'; }
+      this.showCreate = false; this.message = 'Cuenta creada.'; await this.load();
+    } catch { this.message = 'No se pudo crear la cuenta. Revisá los campos únicos y las reglas de contraseña.'; }
   }
 
   async toggle(user: ManagedUser): Promise<void> {
     try {
       await firstValueFrom(this.usersService.update({ ...user, isActive: !user.isActive }));
-      this.message = 'Account updated.'; await this.load();
-    } catch { this.message = 'The account could not be updated. The last active admin is protected.'; }
+      this.message = 'Cuenta actualizada.'; await this.load();
+    } catch { this.message = 'No se pudo actualizar la cuenta. El último administrador activo está protegido.'; }
   }
 }

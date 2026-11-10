@@ -10,27 +10,32 @@ import { AuthService } from '../services/auth.service';
   standalone: true,
   imports: [ReactiveFormsModule],
   template: `
-    <section class="form-card narrow-card">
-      <div class="form-heading">
-        <p class="eyebrow">ACCOUNT SECURITY</p>
-        <h2>Choose a new password</h2>
-        <p>Your temporary password must be replaced before continuing.</p>
+    <section class="auth__box">
+      <div class="auth__brand"><div class="row"><span class="auth__mark"><i class="fa-solid fa-key" aria-hidden="true"></i></span><span class="brand__name">InterProc</span></div></div>
+      <div class="auth__card">
+      <div>
+        <span class="eyebrow">Seguridad de la cuenta</span>
+        <h1>Elegí una nueva contraseña</h1>
+        <p class="muted">Debés reemplazar la contraseña temporal antes de continuar.</p>
       </div>
-      @if (errorMessage) { <p class="form-alert" role="alert">{{ errorMessage }}</p> }
-      <form [formGroup]="form" (ngSubmit)="submit()">
-        <label for="current-password">Temporary password</label>
+      @if (errorMessage) { <div class="alert alert--error" role="alert"><i class="fa-solid fa-circle-exclamation" aria-hidden="true"></i><p>{{ errorMessage }}</p></div> }
+      <form class="stack" [formGroup]="form" (ngSubmit)="submit()">
+        <div class="field"><label for="current-password">Contraseña temporal</label>
         <input id="current-password" type="password" formControlName="currentPassword" autocomplete="current-password">
-        <label for="new-password">New password</label>
+        </div><div class="field"><label for="new-password">Nueva contraseña</label>
         <input id="new-password" type="password" formControlName="newPassword" autocomplete="new-password">
-        <label for="confirm-password">Confirm new password</label>
+        <span class="field__hint">Usá al menos 8 caracteres.</span></div>
+        <div class="field"><label for="confirm-password">Confirmar nueva contraseña</label>
         <input id="confirm-password" type="password" formControlName="confirmation" autocomplete="new-password">
         @if (form.touched && form.hasError('mismatch')) {
-          <span class="field-error">Passwords do not match.</span>
+          <span class="field__error">Las contraseñas no coinciden.</span>
         }
-        <button class="button button-primary" type="submit" [disabled]="submitting">
-          {{ submitting ? 'Saving…' : 'Save password' }} <span aria-hidden="true">→</span>
+        </div>
+        <button class="btn btn--primary" type="submit" [disabled]="submitting">
+          <i class="fa-solid fa-check" aria-hidden="true"></i>{{ submitting ? 'Guardando…' : 'Guardar contraseña' }}
         </button>
       </form>
+      </div>
     </section>
   `,
 })
@@ -61,7 +66,7 @@ export class ChangePasswordComponent {
       await firstValueFrom(this.auth.changePassword({ currentPassword, newPassword }));
       await this.router.navigateByUrl('/dashboard');
     } catch (error: unknown) {
-      this.errorMessage = this.auth.getErrorMessage(error, 'The password could not be changed.');
+      this.errorMessage = this.auth.getErrorMessage(error, 'No se pudo cambiar la contraseña.');
     } finally {
       this.submitting = false;
     }

@@ -11,54 +11,56 @@ import { ClientDetail, ClientNote, ClientsService, ClientSummary } from '../serv
   standalone: true,
   imports: [FormsModule, ReactiveFormsModule],
   template: `
-    <section class="resource-page">
-      <div class="page-heading">
-        <div><p class="eyebrow">RELATIONSHIPS</p><h1>Clients</h1></div>
-        <button class="button button-primary compact-button" type="button" (click)="startNew()">New client</button>
+    <section class="page">
+      <div class="page__head">
+        <div><span class="eyebrow">Relaciones</span><h1>Clientes</h1><p>Personas y empresas vinculadas a los trabajos.</p></div>
+        <div class="page__actions"><button class="btn btn--primary" type="button" (click)="startNew()"><i class="fa-solid fa-plus" aria-hidden="true"></i>Nuevo cliente</button></div>
       </div>
-      @if (message) { <p class="form-alert" role="status">{{ message }}</p> }
-      <div class="catalog-toolbar">
-        <input class="list-search" [(ngModel)]="search" placeholder="Search name, RUT, contact, or email">
-        <label class="toggle"><input type="checkbox" [(ngModel)]="showArchived" (change)="loadClients()"> Archived</label>
+      @if (message) { <div class="alert" role="status"><i class="fa-solid fa-circle-info" aria-hidden="true"></i><p>{{ message }}</p></div> }
+      <div class="toolbar">
+        <div class="field toolbar__search"><label for="client-search">Buscar cliente</label><input id="client-search" [(ngModel)]="search" placeholder="Nombre, RUT, contacto o email"></div>
+        <label class="toggle"><input type="checkbox" [(ngModel)]="showArchived" (change)="loadClients()"> Mostrar archivados</label>
       </div>
 
       <div class="client-layout" [class.with-editor]="showEditor">
-        <div class="panel table-wrap">
-          <table><thead><tr><th>Name</th><th>RUT / ID</th><th>Contact</th><th>Email</th><th>Works</th></tr></thead>
+        <div class="table-wrap">
+          <table><thead><tr><th>Cliente</th><th>RUT / ID</th><th>Contacto</th><th>Email</th><th>Trabajos</th></tr></thead>
             <tbody>@for (client of filteredClients; track client.id) {
-              <tr class="clickable-row" (click)="openClient(client)"><td><b>{{ client.name }}</b></td><td>{{ client.taxId || '—' }}</td><td>{{ client.contactPerson || '—' }}</td><td>{{ client.email || '—' }}</td><td>{{ client.workCount }} / {{ client.openWorkCount }} open</td></tr>
-            } @empty {<tr><td colspan="5">No clients match this view.</td></tr>}</tbody>
+              <tr class="clickable-row" tabindex="0" (click)="openClient(client)" (keydown.enter)="openClient(client)"><td><div class="client-cell"><span class="avatar">{{ client.name.charAt(0).toUpperCase() }}</span><div><b>{{ client.name }}</b>@if (client.isArchived) { <span class="badge">Archivado</span> }</div></div></td><td class="mono">{{ client.taxId || '—' }}</td><td>{{ client.contactPerson || '—' }}</td><td>{{ client.email || '—' }}</td><td>{{ client.workCount }} · {{ client.openWorkCount }} abiertos</td></tr>
+            } @empty {<tr><td class="table-empty" colspan="5">No hay clientes que coincidan con esta vista.</td></tr>}</tbody>
           </table>
         </div>
 
         @if (showEditor) {
-          <aside class="panel client-editor">
-            <div class="editor-heading"><h2>{{ editingId ? 'Client details' : 'New client' }}</h2><button class="text-button" type="button" (click)="closeEditor()">Close</button></div>
-            <form class="grid-form" [formGroup]="clientForm" (ngSubmit)="saveClient()">
-              <label class="span-2">Name or legal name<input formControlName="name"></label>
-              <label>RUT / foreign ID<input formControlName="taxId"></label>
-              <label>Contact person<input formControlName="contactPerson"></label>
-              <label>Email<input type="email" formControlName="email"></label>
-              <label>Phone<input formControlName="phone"></label>
-              <label class="span-2">Address<textarea rows="2" formControlName="address"></textarea></label>
-              <button class="button button-primary compact-button" type="submit" [disabled]="saving">{{ saving ? 'Saving…' : 'Save client' }}</button>
-              @if (editingId && !current?.isArchived) {<button class="button danger-button compact-button" type="button" (click)="archiveClient()">Archive</button>}
-              @if (editingId && current?.isArchived && auth.isAdmin()) {<button class="button secondary-button compact-button" type="button" (click)="restoreClient()">Restore</button>}
+          <aside class="card client-editor">
+            <div class="editor-heading"><div><span class="eyebrow">Detalle</span><h2>{{ editingId ? 'Ficha del cliente' : 'Nuevo cliente' }}</h2></div><button class="btn btn--ghost icon-btn" type="button" aria-label="Cerrar ficha" (click)="closeEditor()"><i class="fa-solid fa-xmark" aria-hidden="true"></i></button></div>
+            <form class="form-grid" [formGroup]="clientForm" (ngSubmit)="saveClient()">
+              <div class="field span-2"><label for="client-name">Nombre o razón social <span class="req">*</span></label><input id="client-name" formControlName="name"></div>
+              <div class="field"><label for="client-tax">RUT / identificador extranjero</label><input id="client-tax" class="mono" formControlName="taxId"></div>
+              <div class="field"><label for="client-contact">Persona de contacto</label><input id="client-contact" formControlName="contactPerson"></div>
+              <div class="field"><label for="client-email">Email</label><input id="client-email" type="email" formControlName="email"></div>
+              <div class="field"><label for="client-phone">Teléfono</label><input id="client-phone" formControlName="phone"></div>
+              <div class="field span-2"><label for="client-address">Dirección</label><textarea id="client-address" rows="2" formControlName="address"></textarea></div>
+              <div class="form-actions">
+                @if (editingId && !current?.isArchived) {<button class="btn btn--danger" type="button" (click)="archiveClient()"><i class="fa-solid fa-box-archive" aria-hidden="true"></i>Archivar</button>}
+                @if (editingId && current?.isArchived && auth.isAdmin()) {<button class="btn" type="button" (click)="restoreClient()"><i class="fa-solid fa-rotate-left" aria-hidden="true"></i>Restaurar</button>}
+                <button class="btn btn--primary" type="submit" [disabled]="saving"><i class="fa-solid fa-check" aria-hidden="true"></i>{{ saving ? 'Guardando…' : 'Guardar cliente' }}</button>
+              </div>
             </form>
 
             @if (editingId) {
-              <section class="client-section"><h3>Associated work</h3>
+              <section class="client-section"><h3>Trabajos asociados</h3>
                 @for (work of current?.works ?? []; track work.id) {<div class="work-row"><div><b>{{ work.code }}</b> {{ work.name }}<small>{{ work.state }}</small></div><span>{{ work.progressPercent }}%</span></div>}
-                @if ((current?.works?.length ?? 0) === 0) {<p class="muted-copy">No associated work yet.</p>}
+                @if ((current?.works?.length ?? 0) === 0) {<p class="muted-copy">Todavía no hay trabajos asociados.</p>}
               </section>
-              <section class="client-section"><h3>Notes</h3><p class="privacy-warning">⚠ Do not include sensitive personal data or information unrelated to the client relationship.</p>
-                <form [formGroup]="noteForm" (ngSubmit)="saveNote()">
-                  <label>Linked work (optional)<select formControlName="workItemId"><option value="">General note</option>@for (work of current?.works ?? []; track work.id) {<option [value]="work.id">{{ work.code }} · {{ work.name }}</option>}</select></label>
-                  <label>Note<textarea rows="3" formControlName="text"></textarea></label>
-                  <button class="button button-primary compact-button" type="submit">{{ editingNote ? 'Save note' : 'Add note' }}</button>
-                  @if (editingNote) {<button class="text-button" type="button" (click)="cancelNoteEdit()">Cancel</button>}
+              <section class="client-section"><h3>Notas</h3><div class="alert alert--warn"><i class="fa-solid fa-triangle-exclamation" aria-hidden="true"></i><p>No incluyas datos personales sensibles ni información ajena a la relación con el cliente.</p></div>
+                <form class="stack" [formGroup]="noteForm" (ngSubmit)="saveNote()">
+                  <div class="field"><label for="note-work">Trabajo vinculado (opcional)</label><select id="note-work" formControlName="workItemId"><option value="">Nota general</option>@for (work of current?.works ?? []; track work.id) {<option [value]="work.id">{{ work.code }} · {{ work.name }}</option>}</select></div>
+                  <div class="field"><label for="note-text">Nota</label><textarea id="note-text" rows="3" formControlName="text"></textarea></div>
+                  <div class="form-actions"><button class="btn btn--primary" type="submit">{{ editingNote ? 'Guardar nota' : 'Agregar nota' }}</button>
+                  @if (editingNote) {<button class="btn btn--ghost" type="button" (click)="cancelNoteEdit()">Cancelar</button>}</div>
                 </form>
-                <div class="notes-list">@for (note of current?.notes ?? []; track note.id) {<article><p>{{ note.text }}</p><small>{{ note.createdByDisplayName }} · {{ note.createdAtUtc }} @if (note.workCode) {· {{ note.workCode }}} @if (note.updatedAtUtc) {· edited}</small><button class="text-button" type="button" (click)="editNote(note)">Edit</button></article>}</div>
+                <div class="notes-list">@for (note of current?.notes ?? []; track note.id) {<article class="note"><div><p>{{ note.text }}</p><small>{{ note.createdByDisplayName }} · {{ note.createdAtUtc }} @if (note.workCode) {· {{ note.workCode }}} @if (note.updatedAtUtc) {· editada}</small></div><button class="btn btn--ghost icon-btn btn--sm" type="button" aria-label="Editar nota" (click)="editNote(note)"><i class="fa-solid fa-pen" aria-hidden="true"></i></button></article>}</div>
               </section>
             }
           </aside>
@@ -67,9 +69,9 @@ import { ClientDetail, ClientNote, ClientsService, ClientSummary } from '../serv
     </section>
 
     @if (showLeaveDialog) {
-      <div class="modal-backdrop" role="presentation"><section class="modal" role="dialog" aria-modal="true" aria-labelledby="leave-title">
-        <h2 id="leave-title">Unsaved changes</h2><p>Save your changes before leaving?</p>
-        <div class="modal-actions"><button class="button danger-button compact-button" type="button" (click)="resolveLeave('discard')">Discard and leave</button><button class="button secondary-button compact-button" type="button" (click)="resolveLeave('stay')">Stay</button><button class="button button-primary compact-button" type="button" (click)="resolveLeave('save')">Save and leave</button></div>
+      <div class="overlay" (keydown.escape)="resolveLeave('stay')"><section class="dialog" role="dialog" aria-modal="true" aria-labelledby="leave-title">
+        <h2 id="leave-title">Cambios sin guardar</h2><p>¿Querés guardar los cambios antes de salir?</p>
+        <div class="dialog__foot"><button class="btn btn--danger" type="button" (click)="resolveLeave('discard')">Descartar y salir</button><button class="btn" type="button" autofocus (click)="resolveLeave('stay')">Permanecer</button><button class="btn btn--primary" type="button" (click)="resolveLeave('save')">Guardar y salir</button></div>
       </section></div>
     }
   `,
@@ -97,12 +99,12 @@ export class ClientsComponent implements OnInit, PendingChangesComponent {
   async ngOnInit(): Promise<void> { await this.loadClients(); }
   async loadClients(): Promise<void> { this.clients = await firstValueFrom(this.clientsService.list(this.showArchived)); }
   startNew(): void {
-    if (this.clientForm.dirty && !window.confirm('Discard unsaved changes and create another client?')) return;
+    if (this.clientForm.dirty && !window.confirm('¿Descartar los cambios sin guardar y crear otro cliente?')) return;
     this.current = null; this.editingId = null; this.showEditor = true;
     this.clientForm.reset({ name: '', taxId: '', contactPerson: '', email: '', phone: '', address: '', concurrencyToken: '' });
   }
   async openClient(summary: ClientSummary): Promise<void> {
-    if (this.clientForm.dirty && !window.confirm('Discard unsaved changes and open another client?')) return;
+    if (this.clientForm.dirty && !window.confirm('¿Descartar los cambios sin guardar y abrir otro cliente?')) return;
     const client = await firstValueFrom(this.clientsService.get(summary.id)); this.setCurrent(client); this.showEditor = true;
   }
   private setCurrent(client: ClientDetail): void {
@@ -110,7 +112,7 @@ export class ClientsComponent implements OnInit, PendingChangesComponent {
     this.clientForm.reset({ name: client.name, taxId: client.taxId ?? '', contactPerson: client.contactPerson ?? '', email: client.email ?? '', phone: client.phone ?? '', address: client.address ?? '', concurrencyToken: client.concurrencyToken });
     this.clientForm.markAsPristine(); this.cancelNoteEdit();
   }
-  closeEditor(): void { if (!this.clientForm.dirty || window.confirm('Discard unsaved changes?')) { this.showEditor = false; this.editingId = null; this.current = null; } }
+  closeEditor(): void { if (!this.clientForm.dirty || window.confirm('¿Descartar los cambios sin guardar?')) { this.showEditor = false; this.editingId = null; this.current = null; } }
 
   async saveClient(): Promise<boolean> {
     this.clientForm.markAllAsTouched(); if (this.clientForm.invalid) return false;
@@ -120,17 +122,17 @@ export class ClientsComponent implements OnInit, PendingChangesComponent {
       const optional = (value: string): string | null => value.trim() || null;
       const input = { name: raw.name.trim(), taxId: optional(raw.taxId), contactPerson: optional(raw.contactPerson), email: optional(raw.email), phone: optional(raw.phone), address: optional(raw.address), concurrencyToken: raw.concurrencyToken || undefined };
       const saved = this.editingId ? await firstValueFrom(this.clientsService.update(this.editingId, input)) : await firstValueFrom(this.clientsService.create(input));
-      this.setCurrent(saved); this.message = 'Client saved.'; await this.loadClients(); return true;
-    } catch { this.message = 'The client could not be saved. Check its unique name, email, or concurrent changes.'; return false; }
+      this.setCurrent(saved); this.message = 'Cliente guardado.'; await this.loadClients(); return true;
+    } catch { this.message = 'No se pudo guardar el cliente. Revisá el nombre único, el email o cambios simultáneos.'; return false; }
     finally { this.saving = false; }
   }
   async archiveClient(): Promise<void> {
     if (!this.editingId) return;
-    if (this.clientForm.dirty && !window.confirm('Archive this client and discard unsaved changes?')) return;
-    try { await firstValueFrom(this.clientsService.archive(this.editingId)); this.message = 'Client archived.'; this.showEditor = false; await this.loadClients(); }
-    catch { this.message = 'The client cannot be archived while it has open work items.'; }
+    if (this.clientForm.dirty && !window.confirm('¿Archivar este cliente y descartar los cambios sin guardar?')) return;
+    try { await firstValueFrom(this.clientsService.archive(this.editingId)); this.message = 'Cliente archivado.'; this.showEditor = false; await this.loadClients(); }
+    catch { this.message = 'El cliente no puede archivarse mientras tenga trabajos abiertos.'; }
   }
-  async restoreClient(): Promise<void> { if (!this.editingId) return; await firstValueFrom(this.clientsService.restore(this.editingId)); this.message = 'Client restored.'; this.showEditor = false; await this.loadClients(); }
+  async restoreClient(): Promise<void> { if (!this.editingId) return; await firstValueFrom(this.clientsService.restore(this.editingId)); this.message = 'Cliente restaurado.'; this.showEditor = false; await this.loadClients(); }
 
   editNote(note: ClientNote): void { this.editingNote = note; this.noteForm.setValue({ text: note.text, workItemId: note.workItemId ?? '' }); }
   cancelNoteEdit(): void { this.editingNote = null; this.noteForm.reset({ text: '', workItemId: '' }); }
@@ -140,8 +142,8 @@ export class ClientsComponent implements OnInit, PendingChangesComponent {
     try {
       if (this.editingNote) await firstValueFrom(this.clientsService.updateNote(this.editingId, { ...this.editingNote, text: raw.text.trim(), workItemId: raw.workItemId || null }));
       else await firstValueFrom(this.clientsService.addNote(this.editingId, { text: raw.text.trim(), workItemId: raw.workItemId || null }));
-      const refreshed = await firstValueFrom(this.clientsService.get(this.editingId)); this.setCurrent(refreshed); this.message = 'Note saved.';
-    } catch { this.message = 'The note could not be saved. Reload if another user changed it.'; }
+      const refreshed = await firstValueFrom(this.clientsService.get(this.editingId)); this.setCurrent(refreshed); this.message = 'Nota guardada.';
+    } catch { this.message = 'No se pudo guardar la nota. Recargá si otro usuario la modificó.'; }
   }
 
   canDeactivate(): boolean | Promise<boolean> {

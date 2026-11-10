@@ -95,7 +95,7 @@ export class AuthService {
   getErrorMessage(error: unknown, fallback: string): string {
     if (error instanceof HttpErrorResponse) {
       if (error.status === 401) {
-        return 'The username, email, or password is incorrect.';
+        return 'El usuario, email o contraseña es incorrecto.';
       }
 
       if (isRecord(error.error)) {
@@ -105,7 +105,7 @@ export class AuthService {
           return detail;
         }
         if (error.status === 400 && isRecord(error.error['errors'])) {
-          return 'Please review the highlighted fields.';
+          return 'Revisá los campos indicados.';
         }
         if (
           typeof title === 'string' &&
@@ -151,7 +151,7 @@ export class AuthService {
       this.setupStatus.set(null);
       this.currentUser.set(null);
       this.initializationError.set(
-        'InterProc could not connect to the service. Check your connection and try again.',
+        'InterProc no pudo conectarse al servicio. Revisá la conexión e intentá nuevamente.',
       );
     }
   }

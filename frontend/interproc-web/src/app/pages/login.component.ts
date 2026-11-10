@@ -10,59 +10,50 @@ import { AuthService, AuthValidationErrors } from '../services/auth.service';
   standalone: true,
   imports: [ReactiveFormsModule],
   template: `
-    <section class="auth-layout">
-      <div class="auth-copy">
-        <p class="eyebrow"><span class="eyebrow-line"></span> YOUR WORK, IN SYNC</p>
-        <h1>Make every<br>process <span>flow.</span></h1>
-        <p class="intro">
-          A clearer view of your work starts here. Sign in to pick up where your
-          team left off.
-        </p>
-        <div class="quote-card">
-          <span class="quote-mark" aria-hidden="true">“</span>
-          <p>Great work happens when every step has a clear place to go.</p>
-          <span class="quote-caption">A little more clarity, every day.</span>
+    <section class="auth__box">
+      <div class="auth__brand">
+        <div class="row">
+          <span class="auth__mark"><i class="fa-solid fa-diagram-project" aria-hidden="true"></i></span>
+          <span class="brand__name">InterProc</span>
         </div>
+        <p class="muted">Acceso interno. Las cuentas las crea un administrador.</p>
       </div>
 
-      <div class="form-card">
-        <div class="form-heading">
-          <p class="eyebrow">WELCOME BACK</p>
-          <h2>Sign in</h2>
-          <p>Enter your details to continue to InterProc.</p>
-        </div>
-
+      <div class="auth__card">
         @if (errorMessage) {
-          <p class="form-alert" role="alert">{{ errorMessage }}</p>
+          <div class="alert alert--error" role="alert"><i class="fa-solid fa-circle-exclamation" aria-hidden="true"></i><p>{{ errorMessage }}</p></div>
         }
 
-        <form [formGroup]="form" (ngSubmit)="onSubmit()" novalidate>
-          <label for="login-identifier">Username or email</label>
-          <input id="login-identifier" type="text" formControlName="identifier" autocomplete="username"
-            placeholder="username or you@company.com" [attr.aria-invalid]="identifierHasError">
+        <form class="stack" [formGroup]="form" (ngSubmit)="onSubmit()" novalidate>
+          <div class="field">
+          <label for="login-identifier">Usuario o email</label>
+          <input id="login-identifier" type="text" formControlName="identifier" autocomplete="username" placeholder="usuario o nombre@empresa.com" [attr.aria-invalid]="identifierHasError">
           @if (form.controls.identifier.touched && form.controls.identifier.invalid) {
-            <span class="field-error">Enter your username or email.</span>
+            <span class="field__error">Ingresá tu usuario o email.</span>
           }
           @for (message of apiErrors['identifier'] ?? []; track message) {
-            <span class="field-error">{{ message }}</span>
+            <span class="field__error">{{ message }}</span>
           }
+          </div>
 
-          <label for="login-password">Password</label>
+          <div class="field">
+          <label for="login-password">Contraseña</label>
           <input id="login-password" type="password" formControlName="password"
-            autocomplete="current-password" placeholder="Enter your password"
+            autocomplete="current-password" placeholder="Ingresá tu contraseña"
             [attr.aria-invalid]="passwordHasError">
           @if (form.controls.password.touched && form.controls.password.invalid) {
-            <span class="field-error">Password is required.</span>
+            <span class="field__error">La contraseña es obligatoria.</span>
           }
           @for (message of apiErrors['password'] ?? []; track message) {
-            <span class="field-error">{{ message }}</span>
+            <span class="field__error">{{ message }}</span>
           }
+          </div>
 
-          <button class="button button-primary" type="submit" [disabled]="isSubmitting">
-            {{ isSubmitting ? 'Signing in…' : 'Continue' }} <span aria-hidden="true">→</span>
+          <button class="btn btn--primary" type="submit" [disabled]="isSubmitting">
+            {{ isSubmitting ? 'Ingresando…' : 'Ingresar' }}
           </button>
         </form>
-        <p class="form-switch">Accounts are created by an administrator.</p>
+        <p class="field__hint" style="margin:0;text-align:center">No hay registro público. Todo acceso queda auditado.</p>
       </div>
     </section>
   `,
@@ -107,7 +98,7 @@ export class LoginComponent {
       this.apiErrors = this.auth.getValidationErrors(error);
       this.errorMessage = this.auth.getErrorMessage(
         error,
-        'We could not sign you in. Please try again.',
+        'No pudimos iniciar sesión. Intentá nuevamente.',
       );
     } finally {
       this.isSubmitting = false;

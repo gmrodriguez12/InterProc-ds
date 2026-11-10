@@ -7,11 +7,11 @@ interface AuditEvent { id: number; action: string; entityType: string; entityLab
 @Component({
   selector: 'app-audit', standalone: true,
   template: `
-    <section class="resource-page">
-      <div class="page-heading"><div><p class="eyebrow">ADMINISTRATION</p><h1>Archive audit</h1></div></div>
-      <div class="panel table-wrap"><table>
-        <thead><tr><th>Date</th><th>Action</th><th>Type</th><th>Item</th><th>User</th></tr></thead>
-        <tbody>@for (event of events; track event.id) {<tr><td>{{ event.occurredAtUtc }}</td><td>{{ event.action }}</td><td>{{ event.entityType }}</td><td>{{ event.entityLabel }}</td><td>{{ event.userDisplayName }}</td></tr>} @empty {<tr><td colspan="5">No archive events yet.</td></tr>}</tbody>
+    <section class="page">
+      <div class="page__head"><div><span class="eyebrow">Administración</span><h1>Auditoría de archivo</h1><p>Registro mínimo de archivados y restauraciones.</p></div></div>
+      <div class="table-wrap"><table>
+        <thead><tr><th>Fecha</th><th>Acción</th><th>Tipo</th><th>Elemento</th><th>Usuario</th></tr></thead>
+        <tbody>@for (event of events; track event.id) {<tr><td class="mono">{{ event.occurredAtUtc }}</td><td><span class="badge">{{ event.action }}</span></td><td>{{ event.entityType }}</td><td>{{ event.entityLabel }}</td><td>{{ event.userDisplayName }}</td></tr>} @empty {<tr><td class="table-empty" colspan="5">Todavía no hay eventos de archivo.</td></tr>}</tbody>
       </table></div>
     </section>
   `,

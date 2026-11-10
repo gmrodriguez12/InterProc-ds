@@ -1,40 +1,65 @@
-import { Component, inject } from '@angular/core';
+import { Component, inject, OnInit } from '@angular/core';
+import { firstValueFrom } from 'rxjs';
+
+import { CatalogService } from '../services/catalog.service';
+import { ClientsService } from '../services/clients.service';
 
 @Component({
   selector: 'app-dashboard',
   standalone: true,
   template: `
-    <section class="dashboard">
-      <div class="dashboard-heading">
+    <section class="page">
+      <div class="page__head">
         <div>
-          <p class="eyebrow"><span class="eyebrow-line"></span> YOUR WORKSPACE</p>
-          <h1>A clearer view<br>of <span>what’s next.</span></h1>
-          <p class="intro">Your processes and priorities will find their home here.</p>
-        </div>
-        <div class="dashboard-art" aria-hidden="true">
-          <div class="art-orbit orbit-one"></div>
-          <div class="art-orbit orbit-two"></div>
-          <div class="art-core"><span></span><span></span><span></span></div>
+          <span class="eyebrow">Dashboard</span>
+          <h1>Resumen de InterProc</h1>
+          <p>Estado actual del catálogo y las relaciones con clientes.</p>
         </div>
       </div>
 
-      <div class="dashboard-grid">
-        <article class="welcome-card">
-          <div class="welcome-icon" aria-hidden="true">✳</div>
-          <div>
-            <p class="eyebrow">YOUR NEXT CHAPTER</p>
-            <h2>Your workspace is ready to take shape.</h2>
-            <p>Organize your work into clear, connected processes. This is where your team’s next steps come together.</p>
-          </div>
-        </article>
-        <article class="stat-card">
-          <span class="stat-label">PROCESS OVERVIEW</span>
-          <span class="stat-value">A fresh start</span>
-          <span class="stat-note">Your work will appear here</span>
-          <div class="stat-rule"><span></span></div>
-        </article>
+      <div class="stats" aria-label="Indicadores">
+        <article class="stat"><div class="stat__head"><span class="stat__label">Trabajos activos</span><i class="fa-solid fa-briefcase" aria-hidden="true"></i></div><span class="stat__value">{{ activeWorkCount }}</span><span class="stat__hint">Fundación de trabajos</span></article>
+        <article class="stat"><div class="stat__head"><span class="stat__label">Procedimientos</span><i class="fa-solid fa-book" aria-hidden="true"></i></div><span class="stat__value">{{ procedureCount }}</span><span class="stat__hint">{{ typeCount }} tipos activos</span></article>
+        <article class="stat"><div class="stat__head"><span class="stat__label">Clientes</span><i class="fa-solid fa-building" aria-hidden="true"></i></div><span class="stat__value">{{ clientCount }}</span><span class="stat__hint">Clientes activos</span></article>
       </div>
+
+      <article class="card dashboard-placeholder">
+        <div>
+          <i class="fa-solid fa-table-columns" aria-hidden="true"></i>
+          <h2>El tablero de trabajos llegará en una próxima fase</h2>
+          <p>Por ahora podés administrar el catálogo de procedimientos y los clientes desde el menú lateral.</p>
+        </div>
+      </article>
+
+      @if (loadError) {
+        <div class="alert alert--warn" role="status"><i class="fa-solid fa-triangle-exclamation" aria-hidden="true"></i><p>No se pudieron actualizar algunos indicadores.</p></div>
+      }
     </section>
   `,
 })
-export class DashboardComponent {}
+export class DashboardComponent implements OnInit {
+  private readonly catalog = inject(CatalogService);
+  private readonly clients = inject(ClientsService);
+
+  activeWorkCount = 0;
+  procedureCount = 0;
+  typeCount = 0;
+  clientCount = 0;
+  loadError = false;
+
+  async ngOnInit(): Promise<void> {
+    try {
+      const [types, procedures, clients] = await Promise.all([
+        firstValueFrom(this.catalog.listTypes()),
+        firstValueFrom(this.catalog.listProcedures()),
+        firstValueFrom(this.clients.list()),
+      ]);
+      this.typeCount = types.length;
+      this.procedureCount = procedures.length;
+      this.clientCount = clients.length;
+      this.activeWorkCount = clients.reduce((total, client) => total + client.openWorkCount, 0);
+    } catch {
+      this.loadError = true;
+    }
+  }
+}

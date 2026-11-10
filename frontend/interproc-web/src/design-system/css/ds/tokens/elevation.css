@@ -1,0 +1,64 @@
+/* Three-layer shadow scale — verbatim from lumen-dark/globals.css.
+   Every tier stacks: (1) inset top-edge highlight = light from above,
+   (2) sharp contact shadow, (3) soft ambient shadow at ~2x the offset/blur.
+
+   xs → chips, dots · sm → buttons, cards · md → hover of sm, floating cards
+   lg → dropdowns, popovers, tooltips · xl → dialogs, sheets */
+:root {
+  --shadow-xs:
+    inset 0 1px 0 rgba(255, 255, 255, 0.03),
+    0 1px 1px rgba(0, 0, 0, 0.35),
+    0 1px 2px rgba(0, 0, 0, 0.15);
+
+  --shadow-sm:
+    inset 0 1px 0 rgba(255, 255, 255, 0.05),
+    0 1px 2px rgba(0, 0, 0, 0.4),
+    0 2px 4px rgba(0, 0, 0, 0.2);
+
+  --shadow-md:
+    inset 0 1px 0 rgba(255, 255, 255, 0.08),
+    0 2px 4px rgba(0, 0, 0, 0.5),
+    0 4px 8px rgba(0, 0, 0, 0.25);
+
+  --shadow-lg:
+    inset 0 1px 0 rgba(255, 255, 255, 0.12),
+    0 4px 8px rgba(0, 0, 0, 0.6),
+    0 8px 16px rgba(0, 0, 0, 0.3);
+
+  --shadow-xl:
+    inset 0 1px 0 rgba(255, 255, 255, 0.18),
+    0 8px 16px rgba(0, 0, 0, 0.7),
+    0 16px 32px rgba(0, 0, 0, 0.35);
+
+  /* Inputs sit BELOW the surface plane — light falls into the recess. */
+  --shadow-inset:
+    inset 0 1px 2px rgba(0, 0, 0, 0.35),
+    inset 0 -1px 0 rgba(255, 255, 255, 0.03);
+
+  /* Primary button: shadow-md + a warm amber bloom layer. */
+  --shadow-primary:
+    inset 0 1px 0 rgba(255, 255, 255, 0.25),
+    0 0 0 1px rgba(255, 200, 100, 0.2),
+    0 2px 4px rgba(0, 0, 0, 0.5),
+    0 4px 12px rgba(240, 170, 60, 0.18);
+
+  /* --- Aliases the component code references but globals.css never declared.
+     button.tsx / icon-button.tsx / card.tsx use --shadow-s|m|l and
+     --shadow-button|-hover; in the source repo they resolve to nothing.
+     Declared here so the components render as designed. See readme.md. --- */
+  --shadow-s: var(--shadow-sm);
+  --shadow-m: var(--shadow-md);
+  --shadow-l: var(--shadow-lg);
+
+  --shadow-button:
+    inset 0 1px 0 rgba(255, 255, 255, 0.08),
+    0 0 0 1px rgba(255, 255, 255, 0.04),
+    0 1px 2px rgba(0, 0, 0, 0.4),
+    0 2px 4px rgba(0, 0, 0, 0.2);
+
+  --shadow-button-hover:
+    inset 0 1px 0 rgba(255, 255, 255, 0.12),
+    0 0 0 1px rgba(255, 255, 255, 0.06),
+    0 2px 4px rgba(0, 0, 0, 0.5),
+    0 4px 8px rgba(0, 0, 0, 0.25);
+}
