@@ -23,6 +23,9 @@
               }
             ],
             "styles": [
+              "src/design-system/vendor/fontawesome/css/all.min.css",
+              "src/design-system/css/app.css",
+              "src/design-system/css/interproc.css",
               "src/styles.css"
             ],
             "outputPath": "dist/interproc-web"
@@ -65,13 +68,6 @@
             }
           },
           "defaultConfiguration": "development"
-        },
-        "test": {
-          "builder": "@angular/build:unit-test",
-          "options": {
-            "tsConfig": "tsconfig.spec.json",
-            "buildTarget": "::development"
-          }
         }
       }
     }

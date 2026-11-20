@@ -1,68 +1,61 @@
-# TASK-002 — Plan propuesto
+# TASK-002 — Plan propuesto de implementación
 
 ## Objetivo
 
-Entregar acceso interno seguro y administración inicial de cuentas para RF-01, RF-02 y RF-04, eliminando el registro público y manteniendo la arquitectura Docker/Identity existente.
+Entregar secuencialmente las fases 0–3, validando cada incremento antes de iniciar el dependiente.
 
-## Implementación propuesta
+## Incremento A — Fundaciones y acceso (fases 0–1)
 
-### 1. Modelo e Identity
+1. Extender Identity con nombre visible, username, email, estado y cambio obligatorio de contraseña.
+2. Crear roles y un comando .NET idempotente para provisionar el primer administrador mediante variables de entorno.
+3. Retirar signup público y el redireccionamiento asociado.
+4. Permitir login por username o email, cambio inicial de contraseña, logout y contexto de sesión.
+5. Implementar administración de cuentas por `admin`, incluida protección del último administrador activo.
+6. Crear políticas de autorización, shell autenticado y navegación inicial.
+7. Incorporar el modelo transaccional de archivado/restauración y su auditoría mínima.
 
-- Introducir un usuario de aplicación compatible con las tablas de Identity para soportar el estado activo si se aprueba.
-- Centralizar nombres de roles y políticas de autorización.
-- Configurar explícitamente política de contraseña y lockout.
-- Agregar un índice único de base de datos para email normalizado.
-- Crear migración EF segura; no transformar cuentas existentes sin una decisión explícita.
+### Condición de salida
 
-### 2. Bootstrap administrativo
+No existe alta pública; el bootstrap es seguro e idempotente; un administrador puede gestionar cuentas; ambos roles acceden solo a las funciones autorizadas; archivados y restauraciones generan auditoría.
 
-- Agregar un modo de comando al ejecutable .NET para crear los roles y el primer `admin`.
-- Leer username, email y contraseña desde variables de entorno requeridas.
-- Validar colisiones, ser idempotente y no registrar secretos.
-- Documentar su ejecución dentro del flujo Docker y las variables sin valores reales.
+## Incremento B — Catálogo (fase 2)
 
-### 3. API de autenticación y cuentas
+1. Implementar tipos de procedimiento con unicidad normalizada, conteo, edición y archivo condicionado.
+2. Implementar procedimientos, detalle, pasos, esquema Mermaid opcional, tiempo estimado y archivo.
+3. Crear versión 1 al alta y nuevas versiones solo cuando cambien pasos o esquema, con motivo obligatorio.
+4. Mostrar historial, versión vigente, autor, fecha, motivo y trabajo de origen.
+5. Restringir a `admin` el borrado irreversible de versiones no vigentes y rechazarlo si fueron utilizadas.
+6. Renderizar Mermaid de forma segura y mostrar errores de sintaxis sin romper la vista.
 
-- Eliminar signup y el criterio "primer usuario es admin".
-- Cambiar login a un identificador que resuelva username o email sin enumerar cuentas.
-- Mantener cookie, antiforgery, logout y restauración de sesión; incluir username/email/rol.
-- Crear endpoints administrativos para listar y crear cuentas, protegidos con rol `admin`.
-- Si se aprueba, agregar activar/desactivar e invalidar las sesiones de una cuenta desactivada.
-- Exponer únicamente datos mínimos y mapear errores seguros de validación/unicidad.
+### Condición de salida
 
-### 4. Interfaz Angular
+RF-13–RF-22 funcionan por API e interfaz, con reglas de versión, archivo, permisos e integridad cubiertas por pruebas.
 
-- Eliminar página, ruta, enlace y redirecciones de signup.
-- Adaptar login a "usuario o email".
-- Mostrar username y rol en el shell autenticado, con logout.
-- Agregar vista administrativa mínima de Cuentas: listado y alta; activación/desactivación si se aprueba.
-- Proteger rutas por autenticación/rol y mantener la autorización real en API.
-- No implementar todavía sidebar completo ni contadores de RF-06.
+## Incremento C — Clientes (fase 3)
 
-### 5. Pruebas y validación
+1. Implementar clientes personas o empresas con nombre único obligatorio y campos opcionales de RUT libre, contacto, email, teléfono y dirección.
+2. Implementar listado, búsqueda local, ficha, alta, edición y aviso de cambios sin guardar.
+3. Implementar notas generales o vinculadas a un trabajo, editables, con autor y fechas, y advertencia visible sobre datos sensibles.
+4. Crear la entidad mínima de trabajo con nombre, código, cliente, estado y avance para asociaciones y contadores.
+5. Listar trabajos del cliente y bloquear su archivo mientras exista alguno que no esté `Terminado` o `Cancelado`.
+6. Mantener las relaciones por identificador para que un cambio de nombre se refleje en los trabajos.
 
-- Crear infraestructura de pruebas backend y frontend necesaria para el alcance.
-- Cubrir bootstrap, signup inexistente, login por ambos identificadores, normalización, lockout, CSRF, logout, sesión, roles, 403, duplicados y concurrencia.
-- Cubrir interfaz sin signup, formulario de login, guards, identidad/rol y administración.
-- Ejecutar builds de .NET/Angular, pruebas, validación de migración, `docker compose config` y recorrido completo en Docker.
-- Registrar cualquier validación que no pueda ejecutarse; no marcar `Done` sin evidencia.
+### Condición de salida
 
-## Documentación
+RF-23–RF-29 funcionan por API e interfaz; las restricciones de archivo y relaciones se verifican con pruebas.
 
-- Actualizar arquitectura de identidad/autorización, variables de bootstrap y operación Docker.
-- Registrar implementación, migración y resultados en TASK-002.
-- Mantener RF-03 diferido y RF-06 parcialmente cubierto.
-- Mantener trazabilidad de LEGAL-001–006 y separar controles técnicos de revisión profesional.
+## Validación por incremento
 
-## Decisiones incluidas en la aprobación
+- Pruebas unitarias y de integración del backend para reglas, permisos, concurrencia e integridad.
+- Pruebas del frontend para formularios, guards, estados y recorridos principales.
+- Build de backend y frontend.
+- Migraciones desde base limpia y desde el esquema actual.
+- Recorrido funcional en Docker Compose a través de Nginx.
+- Revisión de regresiones de autenticación, CSRF, cookies y manejo de errores.
 
-La aprobación del plan debe confirmar o ajustar:
+## Límites
 
-1. Username con 3–50 caracteres, `[A-Za-z0-9._-]`, sin `@` y único case-insensitive.
-2. Contraseña inicial permanente o temporal con cambio obligatorio.
-3. Inclusión de activar/desactivar cuentas en TASK-002.
-4. Existencia de cuentas que deban migrarse.
-
-## Estado
-
-Done. Aprobado por el Product Owner el 9 de noviembre de 2026 con las cuatro opciones recomendadas: formato de username sin `@`, contraseña temporal con cambio obligatorio, activación/desactivación y preservación de datos existentes sin borrado automático. Implementación y validación completadas el 10 de noviembre de 2026.
+- No se implementarán fases 4–7.
+- La entidad mínima de trabajo no incluirá todavía armado, ejecución ni historial completo.
+- No se desplegará ni se hará push sin autorización explícita.
+- Una desviación material de alcance o arquitectura requerirá una nueva decisión del Product Owner.

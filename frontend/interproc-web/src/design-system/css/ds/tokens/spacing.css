@@ -1,0 +1,21 @@
+/* 4px base scale (Tailwind's), named for the steps this system actually uses:
+   control padding 12px, card padding 20px, gap-2/gap-3 between siblings. */
+:root {
+  --space-0-5: 2px;
+  --space-1: 4px;
+  --space-1-5: 6px;
+  --space-2: 8px;
+  --space-2-5: 10px;
+  --space-3: 12px;
+  --space-4: 16px;
+  --space-5: 20px;
+  --space-6: 24px;
+  --space-8: 32px;
+  --space-10: 40px;
+  --space-12: 48px;
+
+  /* Control heights — sm / default / lg across every interactive primitive. */
+  --control-h-sm: 32px;
+  --control-h: 36px;
+  --control-h-lg: 40px;
+}

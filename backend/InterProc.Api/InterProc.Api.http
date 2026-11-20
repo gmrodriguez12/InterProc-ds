@@ -1,8 +1,8 @@
-@InterProc.Api_HostAddress = http://localhost:5084
+@InterProc.Api_HostAddress = http://localhost:5230
 @csrfToken = replace-with-XSRF-TOKEN-cookie-value
 
-### Get session state and the CSRF request token
-GET {{InterProc.Api_HostAddress}}/api/auth/session
+### Get setup status and the CSRF request token
+GET {{InterProc.Api_HostAddress}}/api/auth/setup-status
 Accept: application/json
 
 ### Sign in
@@ -11,9 +11,13 @@ Content-Type: application/json
 X-XSRF-TOKEN: {{csrfToken}}
 
 {
-  "identifier": "admin",
-  "password": "replace-with-temporary-password"
+  "identifier": "gonza",
+  "password": "ChangeMe123!"
 }
+
+### Get the current account
+GET {{InterProc.Api_HostAddress}}/api/auth/me
+Accept: application/json
 
 ### Sign out
 POST {{InterProc.Api_HostAddress}}/api/auth/logout

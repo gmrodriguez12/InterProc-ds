@@ -4,15 +4,16 @@ import { firstValueFrom, Observable, tap } from 'rxjs';
 
 export interface AuthUser {
   id: string;
+  displayName: string;
   username: string;
   email: string;
-  role: 'admin' | 'usuario';
+  roles: string[];
   mustChangePassword: boolean;
+  isActive: boolean;
 }
 
-export interface SessionResponse {
-  user: AuthUser | null;
-  setupRequired: boolean;
+export interface SetupStatus {
+  hasUsers: boolean;
 }
 
 export interface Credentials {
@@ -20,7 +21,7 @@ export interface Credentials {
   password: string;
 }
 
-export interface ChangePasswordCredentials {
+export interface PasswordChange {
   currentPassword: string;
   newPassword: string;
 }
@@ -33,9 +34,9 @@ export class AuthService {
   private initializationPromise: Promise<void> | null = null;
 
   readonly currentUser = signal<AuthUser | null>(null);
-  readonly setupRequired = signal(false);
+  readonly setupStatus = signal<SetupStatus | null>(null);
   readonly isAuthenticated = computed(() => this.currentUser() !== null);
-  readonly isAdmin = computed(() => this.currentUser()?.role === 'admin');
+  readonly isAdmin = computed(() => this.currentUser()?.roles.includes('admin') ?? false);
   readonly initializationError = signal<string | null>(null);
 
   initialize(): Promise<void> {
@@ -59,9 +60,9 @@ export class AuthService {
       .pipe(tap((user) => this.currentUser.set(user)));
   }
 
-  changePassword(credentials: ChangePasswordCredentials): Observable<AuthUser> {
+  changePassword(passwords: PasswordChange): Observable<AuthUser> {
     return this.http
-      .post<AuthUser>('/api/auth/change-password', credentials, { withCredentials: true })
+      .post<AuthUser>('/api/auth/change-password', passwords, { withCredentials: true })
       .pipe(tap((user) => this.currentUser.set(user)));
   }
 
@@ -86,7 +87,7 @@ export class AuthService {
         const messages = Array.isArray(value)
           ? value.filter((message): message is string => typeof message === 'string')
           : [];
-        return messages.length > 0 ? [[lowerFirst(key), messages]] : [];
+        return messages.length > 0 ? [[key.toLowerCase(), messages]] : [];
       }),
     );
   }
@@ -94,7 +95,7 @@ export class AuthService {
   getErrorMessage(error: unknown, fallback: string): string {
     if (error instanceof HttpErrorResponse) {
       if (error.status === 401) {
-        return 'The username/email or password is incorrect.';
+        return 'El usuario, email o contraseña es incorrecto.';
       }
 
       if (isRecord(error.error)) {
@@ -104,7 +105,7 @@ export class AuthService {
           return detail;
         }
         if (error.status === 400 && isRecord(error.error['errors'])) {
-          return 'Please review the highlighted fields.';
+          return 'Revisá los campos indicados.';
         }
         if (
           typeof title === 'string' &&
@@ -122,21 +123,35 @@ export class AuthService {
 
   private async restoreSession(): Promise<void> {
     try {
-      const session = await firstValueFrom(
-        this.http.get<SessionResponse>('/api/auth/session', { withCredentials: true }),
+      const status = await firstValueFrom(
+        this.http.get<SetupStatus>('/api/auth/setup-status', { withCredentials: true }),
       );
-      this.currentUser.set(session.user);
-      this.setupRequired.set(session.setupRequired);
-      this.initializationError.set(null);
-    } catch (error: unknown) {
-      this.currentUser.set(null);
-      this.setupRequired.set(false);
-      if (error instanceof HttpErrorResponse && error.status === 401) {
+      this.setupStatus.set(status);
+
+      if (!status.hasUsers) {
+        this.currentUser.set(null);
         this.initializationError.set(null);
         return;
       }
+
+      try {
+        const user = await firstValueFrom(
+          this.http.get<AuthUser>('/api/auth/me', { withCredentials: true }),
+        );
+        this.currentUser.set(user);
+      } catch (error: unknown) {
+        if (!(error instanceof HttpErrorResponse) || error.status !== 401) {
+          throw error;
+        }
+        this.currentUser.set(null);
+      }
+
+      this.initializationError.set(null);
+    } catch {
+      this.setupStatus.set(null);
+      this.currentUser.set(null);
       this.initializationError.set(
-        'InterProc could not connect to the service. Check your connection and try again.',
+        'InterProc no pudo conectarse al servicio. Revisá la conexión e intentá nuevamente.',
       );
     }
   }
@@ -144,8 +159,4 @@ export class AuthService {
 
 function isRecord(value: unknown): value is Record<string, unknown> {
   return typeof value === 'object' && value !== null;
-}
-
-function lowerFirst(value: string): string {
-  return value.length === 0 ? value : value.charAt(0).toLowerCase() + value.slice(1);
 }

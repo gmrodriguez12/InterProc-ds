@@ -1,26 +1,42 @@
 # TASK-002 — Validación
 
-## Resultado
+## Fases 0–1
 
-Validación completada el 10 de noviembre de 2026. La evidencia es suficiente para cerrar TASK-002.
+- `dotnet build backend/InterProc.slnx`: correcto, sin advertencias.
+- Build de producción Angular con Node 24 dentro de Docker: correcto.
+- Validación de Compose para desarrollo y producción: correcta con variables de prueba.
+- Migraciones aplicadas desde una base PostgreSQL 18 vacía en una pila Docker aislada: correcto.
+- Bootstrap del primer administrador: correcto.
+- Smoke test de login por username, consulta de sesión, cambio obligatorio de contraseña y acceso administrativo: correcto.
+- `dotnet list package --vulnerable --include-transitive`: sin paquetes vulnerables según las fuentes configuradas.
+- La pila aislada y sus volúmenes temporales se eliminaron después de validar; no se tocaron volúmenes del proyecto.
 
-## Evidencia ejecutada
+## Fase 2
 
-- `dotnet build backend/InterProc.slnx --no-restore`: OK, 0 warnings y 0 errores.
-- `dotnet test backend/tests/InterProc.Api.Tests/InterProc.Api.Tests.csproj --no-build --no-restore -m:1 -v:minimal`: OK, 1 prueba integral contra PostgreSQL 18 temporal.
-- La prueba integral cubre: instalación vacía, bootstrap idempotente, CSRF, ausencia de signup, login por username/email, cambio obligatorio, lockout, 403 por rol, duplicado concurrente, desactivación, sesión invalidada y autodesactivación rechazada.
-- `docker build --target test -f frontend/Dockerfile .`: OK, 2 archivos y 5 pruebas Vitest (restauración de sesión y guards).
-- `docker build --target production -f frontend/Dockerfile .`: OK; bundle Angular productivo generado.
-- `docker build --target production -f backend/Dockerfile .`: OK; publish .NET e imagen productiva generados.
-- `docker compose --env-file .env.example -f compose.yaml config --quiet`: OK.
-- `docker compose --env-file .env.example -f compose.yaml -f compose.dev.yaml config --quiet`: OK.
-- `dotnet ef migrations script --idempotent ...`: OK; el script contiene los preflight de emails y roles.
-- `dotnet list backend/InterProc.slnx package --vulnerable --include-transitive`: ningún paquete vulnerable conocido en API o tests.
-- `npm ci` dentro de Docker: auditoría de 300 paquetes, 0 vulnerabilidades.
-- `git diff --check`: OK.
+- `dotnet test backend/InterProc.slnx`: 6 pruebas aprobadas; 0 fallidas.
+- `dotnet build backend/InterProc.slnx`: correcto, sin advertencias.
+- Build Angular de producción en Docker: correcto. Mermaid queda fuera del bundle inicial y se carga bajo demanda.
+- `npm audit`: 0 vulnerabilidades durante la instalación reproducible del build Docker.
+- Migraciones desde PostgreSQL 18 vacío: correctas.
+- Smoke API en Docker: alta de tipo y procedimiento, creación de versión 2, bloqueo 409 al archivar un tipo con procedimientos activos, archivo en orden correcto y auditoría: correcto.
+- La pila aislada y sus volúmenes temporales se eliminaron; no se tocaron volúmenes del proyecto.
 
-## Observaciones
+## Fase 3
 
-- El Node del host (22.16.0) no cumple el mínimo de Angular 22; pruebas y build frontend se validaron con Node 24 en Docker, que es el flujo oficial del repositorio.
-- No se realizó despliegue, push ni modificación de un entorno productivo.
-- LEGAL-001–006 y la revisión profesional previa a producción permanecen pendientes; no bloquean la entrega técnica v1.
+- `dotnet test backend/InterProc.slnx`: 12 pruebas aprobadas; 0 fallidas.
+- Build Angular de producción en Docker: correcto.
+- Migraciones desde PostgreSQL 18 vacío: correctas en validación aislada.
+- Smoke API: cliente con identificador extranjero libre, alta y edición de nota: correcto.
+- Smoke de integridad: trabajo `En Ejecución` bloquea archivo con 409; al pasar a `Terminado`, el archivo devuelve 204 y genera auditoría: correcto.
+- La pila aislada y sus volúmenes temporales se eliminaron; no se tocaron volúmenes del proyecto.
+
+## Validación final integrada
+
+- `docker compose build` de API, frontend y Nginx de producción: correcto.
+- Compose de desarrollo completo con PostgreSQL 18, API, Angular y Nginx en proyecto aislado: cuatro servicios saludables.
+- Las cinco migraciones, incluida `AddClientsAndWorkFoundation`, se aplicaron desde una base vacía.
+- A través de Nginx: `/login` devolvió 200, `/api/health` devolvió `Healthy` y `/api/auth/setup-status` respondió correctamente.
+- Suite final: 12 pruebas aprobadas, 0 fallidas.
+- Auditoría final de NuGet y npm: 0 vulnerabilidades conocidas según las fuentes configuradas.
+- `git diff --check`: correcto.
+- Los contenedores, red y volúmenes de validación se eliminaron al finalizar. No se modificaron datos ni entornos persistentes del proyecto.

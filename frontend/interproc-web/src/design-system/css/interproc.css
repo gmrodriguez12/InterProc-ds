@@ -1,0 +1,96 @@
+/* InterProc — piezas propias del diseño que no están en app.css.
+   Valores tomados de los estilos en línea del diseño. Requiere app.css antes. */
+
+/* Indicadores del dashboard */
+.stats { display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 12px; }
+.stat { background: var(--card); border-radius: 10px; box-shadow: var(--shadow-sm); padding: 16px 18px; display: flex; flex-direction: column; gap: 6px; }
+.stat__head { display: flex; align-items: center; justify-content: space-between; color: var(--muted-foreground); }
+.stat__label { font-size: 12px; letter-spacing: 0.05em; text-transform: uppercase; font-weight: 500; }
+.stat__head i { font-size: 13px; }
+.stat__value { font-size: 24px; font-weight: 600; letter-spacing: -0.01em; font-family: var(--font-mono); }
+.stat__hint { font-size: 12px; color: var(--muted-foreground); }
+
+/* Kanban */
+.kanban { display: flex; gap: 12px; overflow-x: auto; padding-bottom: 12px; align-items: flex-start; }
+.kanban__col { flex: 0 0 272px; width: 272px; display: flex; flex-direction: column; gap: 10px; background: var(--card); border-radius: 10px; padding: 12px; box-shadow: var(--shadow-sm); min-height: 180px; outline: 2px solid transparent; transition: box-shadow 200ms, outline-color 150ms; }
+.kanban__col.is-over { outline-color: var(--ring); }
+.kanban__head { display: flex; align-items: center; gap: 8px; padding: 0 4px; }
+.kanban__dot { width: 7px; height: 7px; border-radius: 999px; box-shadow: var(--shadow-xs); background: var(--muted-foreground); }
+.kanban__title { font-size: 12px; letter-spacing: 0.05em; text-transform: uppercase; font-weight: 500; }
+.kanban__count { margin-left: auto; font-family: var(--font-mono); font-size: 11px; color: var(--muted-foreground); }
+.kanban__drop { border: 1px dashed var(--border); border-radius: 10px; padding: 16px; text-align: center; color: var(--muted-foreground); font-size: 12px; }
+
+/* Color por estado (punto de columna, badges) */
+.st-borrador, .st-pausado { --tono: var(--muted-foreground); }
+.st-presupuesto, .st-mantenimiento { --tono: var(--warning-foreground); }
+.st-planificado { --tono: var(--foreground); }
+.st-ejecucion { --tono: var(--primary); }
+.st-terminado { --tono: var(--success-foreground); }
+.st-cancelado { --tono: var(--destructive); }
+[class*="st-"] .kanban__dot { background: var(--tono); }
+.badge[class*="st-"] { color: var(--tono); background: color-mix(in oklab, var(--tono) 15%, transparent); box-shadow: 0 0 0 1px color-mix(in oklab, var(--tono) 30%, transparent); }
+
+/* Tarjeta de trabajo */
+.job-card { background: var(--popover); border-radius: 10px; padding: 12px; box-shadow: var(--shadow-sm); cursor: grab; display: flex; flex-direction: column; gap: 10px; transition: box-shadow 150ms, transform 150ms; }
+.job-card:hover { box-shadow: var(--shadow-md); transform: translateY(-1px); }
+.job-card:active { cursor: grabbing; }
+.job-card__title { display: flex; align-items: flex-start; gap: 8px; font-size: 14px; font-weight: 500; line-height: 1.375; text-wrap: pretty; }
+.job-card__title i { font-size: 13px; margin-top: 3px; color: var(--primary); }
+.job-card__meta { display: flex; justify-content: space-between; font-size: 11px; color: var(--muted-foreground); font-family: var(--font-mono); }
+.pill--outline { background: transparent; box-shadow: none; border: 1px solid var(--border); color: var(--muted-foreground); }
+
+/* Barra de progreso */
+.progress { height: 4px; border-radius: 999px; background: var(--input); box-shadow: var(--shadow-inset); overflow: hidden; }
+.progress__bar { height: 100%; border-radius: 999px; background: var(--primary); transition: width 300ms var(--ease-standard); }
+
+/* Librería + lienzo (armado de procesos y trabajos) */
+.builder { display: grid; grid-template-columns: 300px 1fr; gap: 16px; align-items: start; }
+.lib-group { display: flex; flex-direction: column; gap: 6px; }
+.lib-item { display: flex; align-items: center; gap: 10px; padding: 8px 10px; border-radius: 8px; background: var(--secondary); box-shadow: var(--shadow-sm); cursor: grab; font-size: 13px; }
+.lib-item:hover { background: var(--accent); box-shadow: var(--shadow-md); }
+.lib-item i { color: var(--primary); width: 16px; }
+.lib-item__time { margin-left: auto; font-family: var(--font-mono); font-size: 11px; color: var(--muted-foreground); }
+.canvas-list { display: flex; flex-direction: column; gap: 8px; }
+.canvas-item { display: flex; align-items: center; gap: 12px; padding: 12px; border-radius: 10px; background: var(--popover); box-shadow: var(--shadow-sm); border-top: 2px solid transparent; }
+.canvas-item.is-drop { border-top-color: var(--primary); }
+.canvas-item__n { font-family: var(--font-mono); font-size: 11px; color: var(--muted-foreground); width: 20px; }
+.canvas-item__icon { width: 32px; height: 32px; border-radius: 8px; background: var(--secondary); box-shadow: var(--shadow-sm); display: grid; place-items: center; color: var(--primary); }
+.canvas-item__body { display: flex; flex-direction: column; min-width: 0; flex: 1; }
+.canvas-item__body small { color: var(--muted-foreground); font-size: 12px; }
+.dropzone { border: 1px dashed var(--border); border-radius: 10px; padding: 28px; text-align: center; color: var(--muted-foreground); }
+
+/* Ejecución: check de procedimiento */
+.check-btn { width: 22px; height: 22px; border-radius: 6px; border: none; background: var(--input); box-shadow: var(--shadow-inset); color: transparent; display: grid; place-items: center; cursor: pointer; font-size: 11px; }
+.check-btn.is-done { background: var(--success-foreground); box-shadow: var(--shadow-sm); color: var(--background); }
+
+/* Línea de tiempo (historial) */
+.timeline { display: flex; flex-direction: column; }
+.timeline__item { display: grid; grid-template-columns: 28px 1fr; gap: 12px; padding-bottom: 16px; position: relative; }
+.timeline__item::before { content: ""; position: absolute; left: 13px; top: 28px; bottom: 0; width: 1px; background: var(--border); }
+.timeline__item:last-child::before { display: none; }
+.timeline__icon { width: 28px; height: 28px; border-radius: 999px; background: var(--secondary); box-shadow: var(--shadow-sm); display: grid; place-items: center; font-size: 11px; color: var(--muted-foreground); }
+.timeline__meta { font-size: 12px; color: var(--muted-foreground); font-family: var(--font-mono); }
+
+/* Modal (overlay + diálogo) */
+.overlay { position: fixed; inset: 0; background: rgba(0,0,0,0.7); backdrop-filter: blur(4px); display: grid; place-items: center; padding: 32px; z-index: 55; }
+.overlay[hidden] { display: none; }
+.dialog { width: 100%; max-width: 560px; max-height: 82vh; overflow: auto; background: var(--popover); border-radius: 14px; box-shadow: var(--shadow-xl); padding: 24px; display: flex; flex-direction: column; gap: 16px; }
+.dialog--wide { max-width: 620px; }
+.dialog__foot { display: flex; justify-content: flex-end; gap: 8px; }
+
+/* Resumen de costos (procesos facturables) */
+.totals { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; }
+.totals div { background: var(--input); box-shadow: var(--shadow-inset); border-radius: 8px; padding: 10px 12px; display: flex; flex-direction: column; gap: 2px; }
+.totals strong { font-family: var(--font-mono); font-size: 14px; }
+
+/* Esquema Mermaid */
+.mermaid-box { background: var(--input); box-shadow: var(--shadow-inset); border: 1px solid var(--border); border-radius: 8px; padding: 16px; overflow: auto; }
+
+/* Buscador de la barra superior */
+.search { display: flex; align-items: center; gap: 8px; height: 32px; padding: 0 10px; border-radius: 8px; border: 1px solid var(--border); background: var(--input); box-shadow: var(--shadow-inset); color: var(--muted-foreground); font-size: 13px; }
+.kbd { font-family: var(--font-mono); font-size: 10px; padding: 1px 5px; border-radius: 4px; background: var(--secondary); box-shadow: var(--shadow-xs); }
+
+@media (max-width: 860px) {
+  .builder { grid-template-columns: 1fr; }
+  .totals { grid-template-columns: 1fr; }
+}

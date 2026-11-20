@@ -12,15 +12,18 @@ export const authenticatedGuard: CanActivateFn = async (_route, state) => {
     return false;
   }
 
-  const user = auth.currentUser();
-  if (!user) {
-    return router.createUrlTree(['/login'], { queryParams: { returnUrl: state.url } });
+  if (auth.isAuthenticated()) {
+    return auth.currentUser()?.mustChangePassword && state.url !== '/change-password'
+      ? router.parseUrl('/change-password')
+      : true;
   }
 
-  return user.mustChangePassword ? router.parseUrl('/change-password') : true;
+  return router.createUrlTree(['/login'], {
+    queryParams: { returnUrl: state.url },
+  });
 };
 
-export const passwordChangeGuard: CanActivateFn = async () => {
+export const anonymousGuard: CanActivateFn = async (_route, state) => {
   const auth = inject(AuthService);
   const router = inject(Router);
 
@@ -29,49 +32,11 @@ export const passwordChangeGuard: CanActivateFn = async () => {
     return false;
   }
 
-  const user = auth.currentUser();
-  if (!user) {
-    return router.parseUrl('/login');
+  if (auth.isAuthenticated()) {
+    return router.parseUrl(auth.currentUser()?.mustChangePassword ? '/change-password' : '/dashboard');
   }
 
-  return user.mustChangePassword ? true : router.parseUrl('/dashboard');
-};
-
-export const adminGuard: CanActivateFn = async () => {
-  const auth = inject(AuthService);
-  const router = inject(Router);
-
-  await auth.initialize();
-  if (auth.initializationError()) {
-    return false;
-  }
-
-  const user = auth.currentUser();
-  if (!user) {
-    return router.parseUrl('/login');
-  }
-  if (user.mustChangePassword) {
-    return router.parseUrl('/change-password');
-  }
-
-  return user.role === 'admin' ? true : router.parseUrl('/dashboard');
-};
-
-export const anonymousGuard: CanActivateFn = async () => {
-  const auth = inject(AuthService);
-  const router = inject(Router);
-
-  await auth.initialize();
-  if (auth.initializationError()) {
-    return false;
-  }
-
-  const user = auth.currentUser();
-  if (!user) {
-    return true;
-  }
-
-  return router.parseUrl(user.mustChangePassword ? '/change-password' : '/dashboard');
+  return true;
 };
 
 export const startupRedirectGuard: CanActivateFn = async () => {
@@ -83,8 +48,25 @@ export const startupRedirectGuard: CanActivateFn = async () => {
     return false;
   }
 
-  const user = auth.currentUser();
   return router.parseUrl(
-    user ? (user.mustChangePassword ? '/change-password' : '/dashboard') : '/login',
+    auth.isAuthenticated()
+      ? auth.currentUser()?.mustChangePassword ? '/change-password' : '/dashboard'
+      : '/login',
   );
+};
+
+export const adminGuard: CanActivateFn = async (_route, state) => {
+  const auth = inject(AuthService);
+  const router = inject(Router);
+  await auth.initialize();
+  if (auth.initializationError()) {
+    return false;
+  }
+  if (!auth.isAuthenticated()) {
+    return router.createUrlTree(['/login'], { queryParams: { returnUrl: state.url } });
+  }
+  if (auth.currentUser()?.mustChangePassword) {
+    return router.parseUrl('/change-password');
+  }
+  return auth.isAdmin() ? true : router.parseUrl('/dashboard');
 };

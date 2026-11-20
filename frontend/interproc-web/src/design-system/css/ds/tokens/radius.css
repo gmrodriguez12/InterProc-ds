@@ -1,0 +1,10 @@
+/* --radius: 0.5rem, with the lumen-dark step pattern from @theme inline:
+   sm = radius - 2, md = radius, lg = radius + 2, xl = radius + 6 */
+:root {
+  --radius: 0.5rem;
+  --radius-sm: calc(var(--radius) - 2px);
+  --radius-md: var(--radius);
+  --radius-lg: calc(var(--radius) + 2px);
+  --radius-xl: calc(var(--radius) + 6px);
+  --radius-full: 9999px;
+}

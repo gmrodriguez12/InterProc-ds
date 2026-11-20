@@ -10,4 +10,4 @@ Una hoja de ruta priorizada que conserve trazabilidad con RF-01–RF-50, muestre
 
 ## Estado
 
-Proposed. El plan está preparado para revisión del Product Owner; no autoriza por sí mismo la implementación.
+Done. El Product Owner aprobó el roadmap y el orden de las fases 0–3 el 2026-11-10. Las fases posteriores conservan el orden propuesto y requerirán resolver sus decisiones específicas antes de implementarse.

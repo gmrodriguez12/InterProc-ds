@@ -1,8 +1,9 @@
 
 using InterProc.Api.Data;
+using InterProc.Api.Domain;
 using InterProc.Api.Security;
 using InterProc.Api.Services;
-using Microsoft.AspNetCore.Authentication.Cookies;
+using Microsoft.AspNetCore.Authentication;
 using Microsoft.AspNetCore.DataProtection;
 using Microsoft.AspNetCore.HttpOverrides;
 using Microsoft.AspNetCore.Identity;
@@ -38,21 +39,25 @@ public class Program
             .AddIdentity<ApplicationUser, IdentityRole>(options =>
             {
                 options.User.RequireUniqueEmail = true;
-                options.User.AllowedUserNameCharacters =
-                    "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789-._";
-                options.Password.RequiredLength = 8;
-                options.Password.RequireDigit = true;
-                options.Password.RequireLowercase = true;
-                options.Password.RequireUppercase = true;
-                options.Password.RequireNonAlphanumeric = true;
-                options.Lockout.AllowedForNewUsers = true;
-                options.Lockout.MaxFailedAccessAttempts = 5;
-                options.Lockout.DefaultLockoutTimeSpan = TimeSpan.FromMinutes(15);
                 options.SignIn.RequireConfirmedAccount = false;
                 options.SignIn.RequireConfirmedEmail = false;
+                options.Lockout.AllowedForNewUsers = true;
+                options.Lockout.MaxFailedAccessAttempts = 5;
+                options.Password.RequiredLength = 8;
             })
             .AddEntityFrameworkStores<ApplicationDbContext>()
             .AddDefaultTokenProviders();
+        builder.Services.AddScoped<IUserClaimsPrincipalFactory<ApplicationUser>, ApplicationClaimsPrincipalFactory>();
+        builder.Services.AddAuthorizationBuilder()
+            .AddPolicy(AppPolicies.ActiveUser, policy =>
+                policy.RequireAuthenticatedUser()
+                    .RequireClaim("active", "true")
+                    .RequireClaim("password_changed", "true"))
+            .AddPolicy(AppPolicies.Admin, policy =>
+                policy.RequireAuthenticatedUser()
+                    .RequireClaim("active", "true")
+                    .RequireClaim("password_changed", "true")
+                    .RequireRole(AppRoles.Admin));
         var isDevelopment = builder.Environment.IsDevelopment();
         builder.Services.ConfigureApplicationCookie(options =>
         {
@@ -74,10 +79,17 @@ public class Program
                 context.Response.StatusCode = StatusCodes.Status403Forbidden;
                 return Task.CompletedTask;
             };
-        });
-        builder.Services.Configure<SecurityStampValidatorOptions>(options =>
-        {
-            options.ValidationInterval = TimeSpan.Zero;
+            options.Events.OnValidatePrincipal = async context =>
+            {
+                var userManager = context.HttpContext.RequestServices
+                    .GetRequiredService<UserManager<ApplicationUser>>();
+                var user = await userManager.GetUserAsync(context.Principal!);
+                if (user is null || !user.IsActive)
+                {
+                    context.RejectPrincipal();
+                    await context.HttpContext.SignOutAsync(IdentityConstants.ApplicationScheme);
+                }
+            };
         });
         builder.Services.AddAntiforgery(options =>
         {
@@ -101,7 +113,8 @@ public class Program
                 .SetApplicationName("InterProc");
         }
         builder.Services.AddScoped<IAuthService, AuthService>();
-        builder.Services.AddScoped<AdminBootstrapService>();
+        builder.Services.AddScoped<BootstrapService>();
+        builder.Services.AddScoped<AuditService>();
 
         if (builder.Environment.IsDevelopment())
         {
@@ -116,14 +129,18 @@ public class Program
         {
             var dbContext = scope.ServiceProvider.GetRequiredService<ApplicationDbContext>();
             await dbContext.Database.MigrateAsync();
-        }
 
-        if (args.Length > 0 && args[0].Equals("bootstrap-admin", StringComparison.OrdinalIgnoreCase))
-        {
-            await using var scope = app.Services.CreateAsyncScope();
-            var bootstrap = scope.ServiceProvider.GetRequiredService<AdminBootstrapService>();
-            await bootstrap.RunAsync(CancellationToken.None);
-            return;
+            if (args.Contains("bootstrap-admin", StringComparer.Ordinal))
+            {
+                var bootstrap = scope.ServiceProvider.GetRequiredService<BootstrapService>();
+                await bootstrap.BootstrapAdminAsync(
+                    RequiredEnvironment("INTERPROC_ADMIN_DISPLAY_NAME"),
+                    RequiredEnvironment("INTERPROC_ADMIN_USERNAME"),
+                    RequiredEnvironment("INTERPROC_ADMIN_EMAIL"),
+                    RequiredEnvironment("INTERPROC_ADMIN_PASSWORD"),
+                    CancellationToken.None);
+                return;
+            }
         }
 
         if (app.Environment.IsDevelopment())
@@ -132,9 +149,13 @@ public class Program
         }
 
         app.UseAuthentication();
-        app.UseMiddleware<AccountStateMiddleware>();
         app.UseAuthorization();
         app.MapControllers();
         app.Run();
     }
+
+    private static string RequiredEnvironment(string name) =>
+        Environment.GetEnvironmentVariable(name) is { Length: > 0 } value
+            ? value
+            : throw new InvalidOperationException($"Environment variable '{name}' is required.");
 }

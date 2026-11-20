@@ -9,65 +9,122 @@ import { AuthService } from './services/auth.service';
   standalone: true,
   imports: [RouterLink, RouterLinkActive, RouterOutlet],
   template: `
-    <div class="app-frame">
-      <header class="topbar">
-        <a class="brand" routerLink="/login" aria-label="InterProc home">
-          <span class="brand-mark" aria-hidden="true">I</span>
-          <span>interproc</span>
-        </a>
+    <a class="skip-link" href="#main-content">Saltar al contenido</a>
+    @if (showApplicationShell) {
+      <div class="shell" [class.sidebar-open]="mobileNavigationOpen" (keydown.escape)="closeNavigation()">
+        <aside class="sidebar" id="application-navigation" aria-label="Navegación de InterProc">
+          <div class="sidebar__mobile-head">
+            <a class="brand" routerLink="/dashboard" (click)="closeNavigation()">
+              <span class="brand__mark"><i class="fa-solid fa-diagram-project" aria-hidden="true"></i></span>
+              <span class="brand__name">InterProc</span>
+            </a>
+            <button class="btn btn--ghost icon-btn sidebar__close" type="button" aria-label="Cerrar menú" (click)="closeNavigation()">
+              <i class="fa-solid fa-xmark" aria-hidden="true"></i>
+            </button>
+          </div>
 
-        <nav class="main-nav" aria-label="Main navigation">
-          @if (auth.isAuthenticated()) {
-            <a routerLink="/dashboard" routerLinkActive="active" ariaCurrentWhenActive="page">Dashboard</a>
-            @if (auth.isAdmin() && !auth.currentUser()?.mustChangePassword) {
-              <a routerLink="/accounts" routerLinkActive="active" ariaCurrentWhenActive="page">Accounts</a>
+          <nav class="nav" aria-label="Principal">
+            <a class="nav__item" routerLink="/dashboard" routerLinkActive="is-active" ariaCurrentWhenActive="page" (click)="closeNavigation()">
+              <i class="fa-solid fa-table-columns" aria-hidden="true"></i><span>Dashboard</span>
+            </a>
+            <a class="nav__item" routerLink="/procedures" routerLinkActive="is-active" ariaCurrentWhenActive="page" (click)="closeNavigation()">
+              <i class="fa-solid fa-book" aria-hidden="true"></i><span>Procedimientos</span>
+            </a>
+            <a class="nav__item" routerLink="/clients" routerLinkActive="is-active" ariaCurrentWhenActive="page" (click)="closeNavigation()">
+              <i class="fa-solid fa-building" aria-hidden="true"></i><span>Clientes</span>
+            </a>
+            @if (auth.isAdmin()) {
+              <span class="nav__section">Administración</span>
+              <a class="nav__item" routerLink="/admin/users" routerLinkActive="is-active" ariaCurrentWhenActive="page" (click)="closeNavigation()">
+                <i class="fa-solid fa-users" aria-hidden="true"></i><span>Cuentas</span>
+              </a>
+              <a class="nav__item" routerLink="/admin/audit" routerLinkActive="is-active" ariaCurrentWhenActive="page" (click)="closeNavigation()">
+                <i class="fa-solid fa-clock-rotate-left" aria-hidden="true"></i><span>Auditoría</span>
+              </a>
             }
-            <button class="nav-button" type="button" (click)="logout()" [disabled]="isLoggingOut">
-              {{ isLoggingOut ? 'Signing out…' : 'Sign out' }}
+          </nav>
+
+          <div class="sidebar__foot">
+            <div class="who">
+              <span class="avatar">{{ userInitials }}</span>
+              <span class="who__meta">
+                <strong>{{ auth.currentUser()?.displayName }}</strong>
+                <span>{{ auth.isAdmin() ? 'Admin' : 'Usuario' }} · auditado</span>
+              </span>
+            </div>
+            <button class="linklike" type="button" (click)="logout()" [disabled]="isLoggingOut">
+              <i class="fa-solid fa-arrow-right-from-bracket" aria-hidden="true"></i>
+              {{ isLoggingOut ? 'Cerrando sesión…' : 'Cerrar sesión' }}
             </button>
-          } @else {
-            <a routerLink="/login" routerLinkActive="active" ariaCurrentWhenActive="page">Sign in</a>
-          }
-        </nav>
+          </div>
+        </aside>
 
-        @if (auth.currentUser(); as user) {
-          <span class="workspace-label session-identity">
-            <span class="status-dot" aria-hidden="true"></span>
-            <span>{{ user.username }}</span>
-            <span class="role-label">{{ user.role }}</span>
-          </span>
-        } @else {
-          <span class="workspace-label">
-            <span class="status-dot" aria-hidden="true"></span>
-            Workspace
-          </span>
-        }
-      </header>
+        <button class="sidebar-scrim" type="button" aria-label="Cerrar menú" (click)="closeNavigation()"></button>
 
-      <main class="page-content">
+        <main class="main" id="main-content">
+          <header class="topbar">
+            <div class="crumbs">
+              <button class="btn btn--ghost icon-btn mobile-menu" type="button" aria-label="Abrir menú" aria-controls="application-navigation" [attr.aria-expanded]="mobileNavigationOpen" (click)="mobileNavigationOpen = true">
+                <i class="fa-solid fa-bars" aria-hidden="true"></i>
+              </button>
+              <span class="eyebrow">{{ pageLabel }}</span>
+            </div>
+            <span class="badge mono" [title]="auth.currentUser()?.email ?? ''">{{ auth.currentUser()?.username }}</span>
+          </header>
+
+          <div class="content">
+            @if (auth.initializationError(); as error) {
+              <section class="alert alert--error service-error" role="alert">
+                <i class="fa-solid fa-circle-exclamation" aria-hidden="true"></i>
+                <div><p>{{ error }}</p><button class="btn btn--primary" type="button" (click)="retryInitialization()">Reintentar</button></div>
+              </section>
+            } @else {
+              <router-outlet />
+            }
+          </div>
+        </main>
+      </div>
+    } @else {
+      <main class="auth" id="main-content">
         @if (auth.initializationError(); as error) {
-          <section class="service-error" role="alert">
-            <p>{{ error }}</p>
-            <button class="button button-primary" type="button" (click)="retryInitialization()">
-              Try again
-            </button>
+          <section class="alert alert--error service-error" role="alert">
+            <i class="fa-solid fa-circle-exclamation" aria-hidden="true"></i>
+            <div><p>{{ error }}</p><button class="btn btn--primary" type="button" (click)="retryInitialization()">Reintentar</button></div>
           </section>
         } @else {
           <router-outlet />
         }
       </main>
-
-      <footer class="footer">
-        <span>InterProc</span>
-        <span>Process clarity, built together.</span>
-      </footer>
-    </div>
+    }
   `,
 })
 export class AppComponent {
   readonly auth = inject(AuthService);
   private readonly router = inject(Router);
   isLoggingOut = false;
+  mobileNavigationOpen = false;
+
+  get showApplicationShell(): boolean {
+    return this.auth.isAuthenticated() && !this.auth.currentUser()?.mustChangePassword;
+  }
+
+  get userInitials(): string {
+    const name = this.auth.currentUser()?.displayName.trim() ?? '';
+    return name.split(/\s+/).filter(Boolean).slice(0, 2).map(part => part[0]?.toUpperCase()).join('') || 'IP';
+  }
+
+  get pageLabel(): string {
+    const path = this.router.url.split('?')[0] ?? '';
+    if (path.startsWith('/procedures')) return 'Procedimientos';
+    if (path.startsWith('/clients')) return 'Clientes';
+    if (path.startsWith('/admin/users')) return 'Cuentas';
+    if (path.startsWith('/admin/audit')) return 'Auditoría';
+    return 'Dashboard';
+  }
+
+  closeNavigation(): void {
+    this.mobileNavigationOpen = false;
+  }
 
   async logout(): Promise<void> {
     this.isLoggingOut = true;
@@ -76,7 +133,7 @@ export class AppComponent {
       await firstValueFrom(this.auth.logout());
       await this.router.navigateByUrl('/login');
     } catch {
-      this.auth.initializationError.set('We could not sign you out. Please try again.');
+      this.auth.initializationError.set('No pudimos cerrar la sesión. Intentá nuevamente.');
     } finally {
       this.isLoggingOut = false;
     }
@@ -87,7 +144,7 @@ export class AppComponent {
     if (!this.auth.initializationError()) {
       await this.router.navigateByUrl(
         this.auth.isAuthenticated()
-          ? (this.auth.currentUser()?.mustChangePassword ? '/change-password' : '/dashboard')
+          ? this.auth.currentUser()?.mustChangePassword ? '/change-password' : '/dashboard'
           : '/login',
       );
     }
